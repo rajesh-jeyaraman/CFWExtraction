@@ -1,7 +1,5 @@
 package XMLFileHandler;
 
-
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -38,238 +36,230 @@ import com.p3.archon.jsonparser.JsonProcessor;
 import com.p3.archon.xmlsipautomater.PackageMain;
 
 public class XmlMain {
-	public static String NOTIFICATIONFILE = "CFWSuccessNotification.xml";
-	public static String DATAFILEIDENTIFIER = "_case.xml";
 
+	private  XmlFileExtratorConfig config = null;
+	private  String configFileName = null;
+	private  ArrayList<NameValuePair> configXpathList = null;
+	
+	private DocumentBuilderFactory factory = null;
+    private DocumentBuilder builder = null;
+    private Document doc = null;
+    private XPathFactory xpathfactory = null;
+    private XPath xpath = null;
+    int totalFileCount = 0;
+    int totalArchiveCount = 0;
+	
+	public boolean setConfigFileName(String configFileName) {
+		if(configFileName != null) {
+			this.configFileName = configFileName;
+			return true;
+		}
+		return false;
+	}
+	
 	public static void main(String[] args) {
 		try {
+			XmlMain process = new XmlMain();
 			// Initial Validation
-			String fileName = args[0];
-			if ( fileName == null) {
+			if(process.setConfigFileName(args[0]) == false) {
 				System.out.println("XMLFileExtractorConfig.json file is missing");
 				return;
 			}
+			process.start();
+		}
+		catch(Exception e)
+		{
+			System.out.println(e.getMessage());
+		}
+	
+		
+		return;
+	}
+	
+	public String getParserConfigAsXml()throws Exception {
+
+		String xmlOutput = null;
+	
+		//Collate all configuration files into one file and 
+		ArrayList<String> fileList = config.getFileList(config.getConfigFolderPath());
+		ArrayList<String> configFiles = new ArrayList<String>();
+		for(String f: fileList) {
+			if(f.toLowerCase().contains(".xml")== true) {
+				configFiles.add(f);
+			}
+		}
+		if(configFiles.size() ==0 ) {	// Default.. directory always get's added
+			System.out.println("Schema file for extraction is missing in folder " +config.getConfigFolderPath() );
+			return xmlOutput; // TODO: throw exception
+		}
+		
+		configXpathList = new ArrayList<NameValuePair>();
+		for(String file: configFiles) {
 			
-			XmlFileExtratorConfig config = new XmlFileExtratorConfig(fileName);
+			//JsonProcessor.readJsonWithObjectMapper(file);
+			ArrayList<NameValuePair> xpathList = getXpathListFromXml(file);
+			
+			for(NameValuePair xpath: xpathList) {
+				configXpathList.add(xpath);
+			}
+		}
+		
+		//Create an xml document with collated xpath list
+		xmlOutput = XPathUtils.createXML(configXpathList, "temp.xml");
+		
+		return xmlOutput;
+	}
+    
+	public void initDom(String xml) throws Exception{
+		// Creating a dom object to search xpath during extraction.
+		factory = DocumentBuilderFactory.newInstance();
+        factory.setNamespaceAware(true); // never forget this!
+        builder = factory.newDocumentBuilder();
+        doc = builder.parse("temp.xml");
+        xpathfactory = XPathFactory.newInstance();
+        xpath = xpathfactory.newXPath();
+	}
+	
+	public boolean compareXpathWithConfig(String path) throws Exception{
+		boolean isAvail = false;
+		
+		String str = removeAttr(path);
+        XPathExpression expr = xpath.compile(str);
+        
+        Object result = expr.evaluate(doc, XPathConstants.NODESET);
+        NodeList nodes = (NodeList) result;
+        
+        if(nodes.getLength()>0) {
+        	isAvail = true; 		// Xpath matches
+        }
+		
+		return isAvail;
+	}
+	
+	public boolean isProcessTriggerFileExists(String directory) {
+		boolean status = false;
+		
+		//Check if Notification file present in specified folder if so start the process else move to next directory
+		File f = new File(directory + config.getProcessTriggerFileName() );  // Bascially Notification.xml file
+		if(f.exists() == true) {
+			status = true;
+		}
+		else
+		{
+			System.out.println("Notification file not present in directory " +directory );
+			status = false;
+		}
+		return status;
+	}
+	
+	public ArrayList<NameValuePair> parseAndExtractData(String xmlFileName) throws Exception {
+		
+		ArrayList<NameValuePair> dataXpaths = getXpathListFromXml(xmlFileName);		
+		ArrayList<NameValuePair> unorderXpathList = new ArrayList<NameValuePair>();
+
+		for(NameValuePair data: dataXpaths) {
+			if(compareXpathWithConfig(data.getName()) == true) {
+				unorderXpathList.add(data);
+			}			
+		}							
+		return getOrderedList(unorderXpathList, configXpathList);
+	}
+	
+	public void start()throws Exception {
+		try {
+			
+			//Read the configuration setting for this process
+			config = new XmlFileExtratorConfig(configFileName);
 			if(config.parseFile() == false)return;
 			
-			//Collate all configuration files into one file and 
-			ArrayList<String> fileList = config.getFileList(config.getConfigFolderPath());
-			ArrayList<String> configFiles = new ArrayList<String>();
-			for(String f: fileList) {
-				if(f.toLowerCase().contains(".xml")== true) {
-					configFiles.add(f);
-				}
-			}
-			if(configFiles.size() <1) {	// Default.. directory always get's added
-				System.out.println("Schema file for extraction is missing in folder " +config.getConfigFolderPath() );
-				return;
-			}
+			//Create a xml file to perform xpath search during data extraction.
+			String xml = getParserConfigAsXml();
+			initDom(xml);
 			
-			ArrayList<NameValuePair> configXpathList = new ArrayList<NameValuePair>();
-			for(String file: configFiles) {
-				
-				//JsonProcessor.readJsonWithObjectMapper(file);
-				ArrayList<NameValuePair> xpathList = getXpathListFromXml(file);
-				
-				for(NameValuePair xpath: xpathList) {
-					configXpathList.add(xpath);
-				}
-			}
-			
-			//Create an xml document with collated xpath list
-			String xml = XPathUtils.createXML(configXpathList, "temp.xml");
-			//System.out.println(xml);
-			/*
-			PrintWriter out = new PrintWriter("temp.xml");
-			out.println(xml);
-			out.close();
-			*/
-			// Creating a dom object to search xpath during extraction.
-			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-	        factory.setNamespaceAware(true); // never forget this!
-	        DocumentBuilder builder = factory.newDocumentBuilder();
-	        Document doc = builder.parse("temp.xml");
-	 
-	        XPathFactory xpathfactory = XPathFactory.newInstance();
-	        XPath xpath = xpathfactory.newXPath();
-	 
 	        // Data Extraction
-			ArrayList<String> directories = config.getDataDirectoryList();
-			for(String directory: directories) {
-		        ArrayList<NameValuePair> finalXpathList = new ArrayList<NameValuePair>();
-		        ArrayList<NameValuePair> unorderXpathList = new ArrayList<NameValuePair>();
-				
-				ArrayList<String> files = config.getFileList(directory);
-				ArrayList<String> fileNames = config.getFileNameList(directory);
-				boolean readyForArchive = false;
-				ArrayList<NameValuePair> errorList = new ArrayList<NameValuePair>();
+			ArrayList<NameValuePair> finaleResponse = new ArrayList<NameValuePair>();
+
+			if(isProcessTriggerFileExists(config.getDataFolderPath()) == false) {	
+				System.out.println("Trigger file does not exists hence no processing required.");
+				return; // to next directory
+			}
+			
+	        ArrayList<NameValuePair> finalXpathList = new ArrayList<NameValuePair>();
+			ArrayList<String> files = config.getDataFileList();
+			ArrayList<String> relatedFiles = null;
+			ArrayList<String> caseNumbers = new ArrayList<String>();
+			
+			int batch = 0;
+			totalFileCount = files.size();
+			totalArchiveCount = 0;
+			
+			for(String file: files) {
 				String caseNumber = null;
-				for(String file: files) {
-					
-					if( isSuccessNotification(file) == true) {
-						readyForArchive = true;
-						caseNumber = getCaseNumber(file);
-						
-					}
-				}
-				
-				// Skip the folders that are yet to be notified.
-				if( caseNumber == null) {
-					System.out.println("Either notification file not present or case number unavailable in directory" +directory );
-					continue; //next directory
-				}
-				
-				if(readyForArchive == true) {
-					for(String file: files) {
-						try {
-						if(file.contains(NOTIFICATIONFILE) != true && file.contains(".xml")==true) {
-							
-							if(file.contains(DATAFILEIDENTIFIER)==true) {
-								System.out.println(file + "being processed....");
-								
-								ArrayList<NameValuePair> dataXpaths = getXpathListFromXml(file);						
-								for(NameValuePair data: dataXpaths) {
-									String str = removeAttr(data.getName());
-							        XPathExpression expr = xpath.compile(str);
-							        
-							        Object result = expr.evaluate(doc, XPathConstants.NODESET);
-							        NodeList nodes = (NodeList) result;
-							        if(nodes.getLength()>0) {
-							        	unorderXpathList.add(data);
-							        	//System.out.println(data.getName()+"=" + data.getValue());
-							        }
-								}							
-								finalXpathList = getOrderedList(unorderXpathList, configXpathList);
-								}
-								
-							}
-							else {
-								System.out.println(file + "Skipping as it is not data file.");
-							}
-						}
-						catch(Exception e) {
-							System.out.println("Error in parsing xml file :" + file);
-							File fn = new File(file);
-							NameValuePair error = new NameValuePair(fn.getName(), "Error in parsing Xml:" +e.getMessage() );
-							errorList.add(error);
-							continue;
-						}
-							// Create out directory
-							String outdirectory = config.getOutputFolderPath() + caseNumber + config.getFilePathSeperator();
-							File od = new File(outdirectory);
-							
-							if(!od.exists()) {
-								if(od.mkdir()) {
-									System.out.println(outdirectory + "Successfully created");
-								}
-							}
-							
-							if(file.contains(NOTIFICATIONFILE) != true && file.contains(".xml")==true) {
-								//Copy file to destination only if no errors in processing all the files. 
-								File source = new File(file);
-								copyFileUsingStream(source,config.getOutputFolderPath()+caseNumber);
-							}
-							
-						}
-						
-					}
-				if(errorList.size() >0) {
-					int i = 0;
-					
-					ArrayList<NameValuePair> response = new ArrayList<NameValuePair>();
-					NameValuePair casePath = new NameValuePair("/ARCHIVE/CASEDETAILS/CASENUMBER",caseNumber);
-					response.add(casePath);
-					NameValuePair archiveStatus = new NameValuePair("/ARCHIVE/CASEDETAILS/ARCHIVESTATUS","FAIL");
-					response.add(archiveStatus);
-					
-					for(String dataFile: fileNames) {
-						if(dataFile.contains(NOTIFICATIONFILE) != true && dataFile.contains(".xml")==true) {
-							++i;
-							response.add(new NameValuePair(("/ARCHIVE/CASEDETAILS/CASEFILES/FILENAME["+ String.valueOf(i) +"]"),dataFile));
-						}
-						
-					}
-					int j = 0;
-					for(NameValuePair error: errorList) {
-						++j;
-					response.add(new NameValuePair("/ARCHIVE/CASEDETAILS/ERROR["+String.valueOf(j)+"]/FILENAME",error.getName()));
-					response.add(new NameValuePair("/ARCHIVE/CASEDETAILS/ERROR["+String.valueOf(j)+"]/CODE","400"));
-					response.add(new NameValuePair("/ARCHIVE/CASEDETAILS/ERROR["+String.valueOf(j)+"]/DESC",error.getValue()));
-					}
-					// Archive response file				
-					XPathUtils.createXML(response,config.getResponseFolderPath() + "ARCHIVE_RESPONSE" + caseNumber + ".xml");
-					continue;
-				}
-				
-				String outdirectory = config.getOutputFolderPath() + caseNumber + config.getFilePathSeperator();
-				String outputFileName = outdirectory + "ARCHON_GEN_FILE.xml";
-				String schemaFileName = config.getOutputFolderPath() + "pdi-schema.xsd";
-				// Add file names in output xml
-				String root= "/" + XPathUtils.getRootElement(finalXpathList.get(0).getName()) ;
-				
-				int i = 0;
-				
-				ArrayList<NameValuePair> response = new ArrayList<NameValuePair>();
-				NameValuePair casePath = new NameValuePair("/ARCHIVE/CASEDETAILS/CASENUMBER",caseNumber);
-				response.add(casePath);
-				NameValuePair archiveStatus = new NameValuePair("/ARCHIVE/CASEDETAILS/ARCHIVESTATUS","SUCCESS");
-				response.add(archiveStatus);
-				
-				for(String dataFile: fileNames) {
-					if(dataFile.contains(NOTIFICATIONFILE) != true && dataFile.contains(".xml")==true) {
-						++i;
-						String attachmentPath = root + "[1]" + "/Attachments[1]/attachment[" + String.valueOf(i) + "]";
-						String attachmentValue =dataFile;
-						NameValuePair data = new NameValuePair(attachmentPath,attachmentValue);
-						finalXpathList.add(data);
-						response.add(new NameValuePair(("/ARCHIVE/CASEDETAILS/CASEFILES/FILENAME["+ String.valueOf(i) +"]"),dataFile));
-					}
-					
-				}
-				response.add(new NameValuePair("/ARCHIVE/CASEDETAILS/ERROR/FILENAME",""));
-				response.add(new NameValuePair("/ARCHIVE/CASEDETAILS/ERROR/CODE",""));
-				response.add(new NameValuePair("/ARCHIVE/CASEDETAILS/ERROR/DESC",""));
-				
-				
-				//System.out.println(outputFileName);
-				//Create output extracted file
-				ArrayList<NameValuePair> xpathForXsd = new ArrayList<NameValuePair>();
-				for(NameValuePair n: finalXpathList) {
-					String name = "/RECORDs[1]/RECORD[1]" + n.getName();
-					//System.out.println(name + "=" + "");
-					xpathForXsd.add(new NameValuePair(name, ""));
-				}
-				XPathUtils.createXML(finalXpathList, outputFileName);
-				
-				//Generate schema file
-				XPathUtils.createXML(configXpathList, "temp2.xml");
-				XmlToXsd("temp2.xml", schemaFileName); // ROOTS/ROOT to be added for SIP
-				
-				
-				//SIP Creation
-				String folder = config.getOutputFolderPath();
-				String holding = config.getHolding();
-				String app = config.getAppName();
-				String producer = config.getProducer();
-				String entity = config.getSipentity();
-				String schema = config.getSchema();
-				String outputPath = config.getSipOutputFolderPath(); // sip folder path for output
-				new PackageMain().start(folder, holding, app, producer, entity, schema, outputPath);
-				
-				// Archive response file				
-				XPathUtils.createXML(response,config.getResponseFolderPath() + "ARCHIVE_RESPONSE" + caseNumber + ".xml");
+				ArrayList<NameValuePair> fileXpathList =null;
 				
 				try {
-				//Rename CFWSuccessNotification.xml file
-				File file = new File(directory + NOTIFICATIONFILE);
-				file.renameTo(new File(directory + "Archived.xml"));
+					if(config.isDataFile(file)== true) {
+						++batch;
+						fileXpathList = new ArrayList<NameValuePair>();
+						caseNumber = getCaseNumberFromFileName(file);
+						relatedFiles = getRelatedFilesForCaseNumber(caseNumber,files);
+						fileXpathList = parseAndExtractData(file);  // Based on configuration file, data is extracted.							
+						copyFilesToOutDir(relatedFiles, caseNumber);
+						addSuccessInArchiveResponse(batch, finaleResponse, caseNumber, relatedFiles);
+						
+					}
+					else {
+						System.out.println(file + "Skipping as it is not data file.");
+						continue;
+					}
 				}
 				catch(Exception e) {
-					System.out.println("Exception in renaming CFWSuccessNotification.xml file.");
-				}				
-				
-				System.out.println(caseNumber + "Success");
+					System.out.println("Error in parsing xml file :" + file);
+					File fn = new File(file);
+					NameValuePair error = new NameValuePair(fn.getName(), "Error in parsing Xml:" +e.getMessage() );
+					//Move the file and related file to error directory
+					//copyFilesToOutDir(relatedFiles);
+					addFailureInArchiveResponse(batch, finaleResponse, caseNumber, relatedFiles, error);
+					continue;
+				}
+				addAttachmentTag(fileXpathList, relatedFiles);
+				addToFinalXpathList(batch,fileXpathList, finalXpathList);
+				createOutXmlFile(batch,fileXpathList, caseNumber);
+				caseNumbers.add(caseNumber);
+			}
+			//createOutXmlFile(finalXpathList);
+			createSip();
+			renameProcessTriggerFile();
+			addTotalFileCount(finaleResponse);
+			XPathUtils.createXML(finaleResponse,config.getResponseFolderPath() + "ARCHIVE_RESPONSE.xml");
+			
+			//Delete output folder
+			for(String d: caseNumbers) {
+				String outdir = config.getOutputFolderPath() + d;
+				File dir = new File(outdir);
+				if(dir.exists()) {
+					String[]entries = dir.list();
+					for(String s: entries){
+					    File currentFile = new File(dir.getPath(),s);
+					    currentFile.delete();
+					}
+					dir.delete();
+				}
+			}
+			//Move files to processed folder
+			String outDir = config.getDataFolderPath() + "Processed";
+			File od = new File(outDir);
+			
+			if(!od.exists()) {
+				if(od.mkdir()) {
+					System.out.println(outDir + "Successfully created");
+				}
+			}
+			outDir = outDir + File.separator;
+			files.add(config.getDataFolderPath() + "Processed.xml"); // Add the trigger notification also to be moved.
+			for(String f: files) {
+				File file = new File(f); // Assuming f won't have full path
+				file.renameTo(new File(outDir + file.getName()));
 			}
 			
 		}
@@ -278,7 +268,146 @@ public class XmlMain {
 		}
 	
 	}
-	private static ArrayList<NameValuePair> getOrderedList(ArrayList<NameValuePair> data, ArrayList<NameValuePair> config){
+	
+	
+	private void renameProcessTriggerFile() {
+		try {
+			//Rename CFWSuccessNotification.xml file
+			File file = new File(config.getDataFolderPath() + config.getProcessTriggerFileName());
+			file.renameTo(new File(config.getDataFolderPath() + "Processed.xml"));
+		}
+		catch(Exception e) {
+			System.out.println("Exception in renaming "+config.getProcessTriggerFileName() + "file.");
+		}				
+	}
+	
+	private void addToFinalXpathList(int batch, ArrayList<NameValuePair> fileXpathList, 
+			ArrayList<NameValuePair>  finalXpathList) throws Exception {
+		
+		for(NameValuePair n: fileXpathList ) {
+			String name = "/RECORDs[1]/RECORD["+ String.valueOf(batch) + "]" + n.getName();
+			NameValuePair data = new NameValuePair(name, n.getValue());
+			finalXpathList.add(data);
+		}
+	}
+	private void createOutXmlFile(int batch, ArrayList<NameValuePair> finalXpathList, String caseNumber) throws Exception {
+		// Create out directory
+		String outdirectory = config.getOutputFolderPath() + caseNumber + File.separator;
+		File od = new File(outdirectory);
+		
+		if(!od.exists()) {
+			if(od.mkdir()) {
+				System.out.println(outdirectory + "Successfully created");
+			}
+		}
+		
+		//Create output extracted file
+		String outputFileName = outdirectory + "ARCHON_GEN_FILE_"+String.valueOf(batch)+".xml";
+		XPathUtils.createXML(finalXpathList, outputFileName);
+		
+		/*
+		//Create Schema File
+		ArrayList<NameValuePair> xpathForXsd = new ArrayList<NameValuePair>();
+		for(NameValuePair n: finalXpathList) {
+			String name = "/RECORDs[1]/RECORD[1]" + n.getName();
+			//System.out.println(name + "=" + "");
+			xpathForXsd.add(new NameValuePair(name, ""));
+		}
+		
+		//Generate schema file
+		XPathUtils.createXML(configXpathList, "temp2.xml");
+		XmlToXsd("temp2.xml", "pdi-schema.xml"); // ROOTS/ROOT to be added for SI
+		*/
+	}
+	
+	private void createSip() throws Exception {
+		try {
+			//SIP Creation
+			String folder = config.getOutputFolderPath();
+			String holding = config.getHolding();
+			String app = config.getAppName();
+			String producer = config.getProducer();
+			String entity = config.getSipentity();
+			String schema = config.getSchema();
+			String outputPath = config.getSipOutputFolderPath(); // sip folder path for output
+			new PackageMain().start(folder, holding, app, producer, entity, schema, outputPath);
+		}
+		catch(Exception e) {
+			System.out.println("Error in creating sip: " + e.getMessage());
+		}
+	}
+	
+	private void addAttachmentTag(ArrayList<NameValuePair> finalXpathList, ArrayList<String> files) {
+		int i = 1;
+		String root= "/" + XPathUtils.getRootElement(finalXpathList.get(0).getName()) ;
+		
+		for(String file: files) {
+			String attachmentPath = root + "[1]" + "/Attachments[1]/attachment[" + String.valueOf(i) + "]";
+			String attachmentValue =new File(file).getName();
+			NameValuePair data = new NameValuePair(attachmentPath,attachmentValue);
+			finalXpathList.add(data);	
+		}
+		
+	}
+	
+	private void addTotalFileCount(ArrayList<NameValuePair> response) {
+		NameValuePair fileCount = new NameValuePair("/ARCHIVE/TOTAL_FILE_COUNT", String.valueOf(--totalFileCount) ); // Notification file removed.
+		response.add(fileCount);
+		NameValuePair archiveFileCount = new NameValuePair("/ARCHIVE/TOTAL_ARCHIVE_FILE_COUNT", String.valueOf(totalArchiveCount) );
+		response.add(archiveFileCount);
+		
+	}
+	
+	private void addSuccessInArchiveResponse(int idx, ArrayList<NameValuePair> response,
+			String caseNumber, ArrayList<String> relatedFiles) throws Exception{
+		
+		int i = 0;
+		
+		NameValuePair casePath = new NameValuePair("/ARCHIVE/CASEDETAILS["+String.valueOf(idx) +"]/CASENUMBER",caseNumber);
+		response.add(casePath);
+		NameValuePair archiveStatus = new NameValuePair("/ARCHIVE/CASEDETAILS["+String.valueOf(idx) +"]/ARCHIVESTATUS","SUCCESS");
+		response.add(archiveStatus);
+		
+		for(String dataFile: relatedFiles) {
+			if( dataFile.contains(caseNumber)  == true) {
+				++i;
+				response.add(new NameValuePair(("/ARCHIVE/CASEDETAILS["+String.valueOf(idx) +"]/CASEFILES/FILENAME["+ String.valueOf(i) +"]"),dataFile));
+			}
+			
+		}
+		response.add(new NameValuePair("/ARCHIVE/CASEDETAILS["+String.valueOf(idx) +"]/ERROR/FILENAME",""));
+		response.add(new NameValuePair("/ARCHIVE/CASEDETAILS["+String.valueOf(idx) +"]/ERROR/CODE",""));
+		response.add(new NameValuePair("/ARCHIVE/CASEDETAILS["+String.valueOf(idx) +"]/ERROR/DESC",""));
+	}
+	
+	private void addFailureInArchiveResponse(int idx, ArrayList<NameValuePair> response,
+			String caseNumber, ArrayList<String> relatedFiles, NameValuePair error) throws Exception{
+			
+			NameValuePair casePath = new NameValuePair("/ARCHIVE/CASEDETAILS["+String.valueOf(idx) +"]/CASENUMBER",caseNumber);
+			response.add(casePath);
+			NameValuePair archiveStatus = new NameValuePair("/ARCHIVE/CASEDETAILS["+String.valueOf(idx) +"]/ARCHIVESTATUS","FAIL");
+			response.add(archiveStatus);
+			int i = 1;
+			for(String dataFile: relatedFiles) {
+				response.add(new NameValuePair(("/ARCHIVE/CASEDETAILS["+String.valueOf(idx) +"]/CASEFILES/FILENAME["+ String.valueOf(i) +"]"),dataFile));
+				++i;
+			}
+			response.add(new NameValuePair("/ARCHIVE/CASEDETAILS["+String.valueOf(idx) +"]/ERROR[1]/FILENAME",error.getName()));
+			response.add(new NameValuePair("/ARCHIVE/CASEDETAILS["+String.valueOf(idx) +"]/ERROR[1]/CODE","400"));
+			response.add(new NameValuePair("/ARCHIVE/CASEDETAILS["+String.valueOf(idx) +"]/ERROR[1]/DESC",error.getValue()));
+	}
+	
+	private ArrayList<String> getRelatedFilesForCaseNumber(String caseNumber, ArrayList<String> files){
+		ArrayList<String> relatedFiles = new ArrayList<String>();
+		for(String f: files) {
+			if(f.contains(caseNumber) == true) {
+				relatedFiles.add(f);
+			}
+		}
+		return relatedFiles;
+	}
+	
+	private ArrayList<NameValuePair> getOrderedList(ArrayList<NameValuePair> data, ArrayList<NameValuePair> config){
 		ArrayList<NameValuePair> orderedList = new ArrayList<NameValuePair>();
 		for(NameValuePair n: config) {
 			String xpath = removeAttr(n.getName());
@@ -291,12 +420,12 @@ public class XmlMain {
 		return orderedList;
 	}
 
-	private static void copyFileUsingStream(File source, String opf) throws IOException {
+	private void copyFileUsingStream(File source, String opf) throws IOException {
 	    InputStream is = null;
 	    OutputStream os = null;
 	    try {
 	        is = new FileInputStream(source);
-	        os = new FileOutputStream(opf + File.separator + source.getName()); 
+	        os = new FileOutputStream(opf + source.getName()); 
 	       
 	            IOUtils.copy(is, os);
 	            System.out.println("File copied from");
@@ -309,57 +438,39 @@ public class XmlMain {
 	             IOUtils.closeQuietly(os);
 	         }
 	}
-	public static String getCaseNumber(String notificationFileName) throws Exception{
-		String caseNumber = null;
-		if(notificationFileName.contains(NOTIFICATIONFILE)== false) {
-			return caseNumber;
+	
+	private void copyFilesToOutDir(ArrayList<String> files, String caseNumber) throws Exception {
+	
+		// Create out directory
+		String outdirectory = config.getOutputFolderPath() + caseNumber + File.separator;
+		File od = new File(outdirectory);
+		
+		if(!od.exists()) {
+			if(od.mkdir()) {
+				System.out.println(outdirectory + "Successfully created");
+			}
+		}
+	
+		for(String f: files) {
+			File file = new File(f);
+			copyFileUsingStream(file,outdirectory);
+			++totalArchiveCount;
+		}
+	}
+	
+	public String getCaseNumberFromFileName(String fileName) {
+		String ret = null;
+		String onlyFileName = (new File(fileName)).getName();
+		int position = onlyFileName.indexOf(config.getDatafileNameIndicator());  // Search _case
+		if(position>0) {
+			ret = onlyFileName.substring(0, position);
 		}
 		
-		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setNamespaceAware(true); // never forget this!
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        Document doc = builder.parse(notificationFileName);
- 
-        XPathFactory xpathfactory = XPathFactory.newInstance();
-        XPath xpath = xpathfactory.newXPath();
-        XPathExpression expr = xpath.compile("/CFW/CASENUMBER/text()");
-	
-        Object result = expr.evaluate(doc, XPathConstants.NODESET);
-        NodeList nodes = (NodeList) result;
-        for (int i = 0; i < nodes.getLength(); i++) {
-        	caseNumber = nodes.item(i).getNodeValue();
-        }
-	
-		return caseNumber;
+		return ret;
 	}
-	public static boolean isSuccessNotification(String notificationFileName) throws Exception {
-		boolean readyForArchive = false;
-		if(notificationFileName.contains(NOTIFICATIONFILE)== false) {
-			return readyForArchive;
-		}
-		
-		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setNamespaceAware(true); // never forget this!
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        Document doc = builder.parse(notificationFileName);
- 
-        XPathFactory xpathfactory = XPathFactory.newInstance();
-        XPath xpath = xpathfactory.newXPath();
-        XPathExpression expr = xpath.compile("/CFW/READYFORARCHIVE/text()");
 	
-        Object result = expr.evaluate(doc, XPathConstants.NODESET);
-        NodeList nodes = (NodeList) result;
-        for (int i = 0; i < nodes.getLength(); i++) {
-        	String str = nodes.item(i).getNodeValue();
-        	if(str.compareToIgnoreCase("TRUE") == 0) {
-        		readyForArchive = true;
-        	}
-        }
-	
-		return readyForArchive;
-	}
 
-	public static String removeAttr(String input) {
+	public String removeAttr(String input) {
 			String str = "";
 			char ATTRSTART = '[';
 			char ATTREND = ']';
@@ -378,7 +489,7 @@ public class XmlMain {
 			return str;
 	}
 	
-	public static ArrayList<NameValuePair> getXpathListFromXml(String fileName)throws Exception{
+	public ArrayList<NameValuePair> getXpathListFromXml(String fileName)throws Exception{
 		ArrayList<NameValuePair> xpathList = new ArrayList<NameValuePair>();
 		
 		if(fileName.toLowerCase().contains(".xml") == false)return xpathList;
@@ -408,7 +519,7 @@ public class XmlMain {
         return xpathList;
 	}
 	
-	public static void XmlToXsd(String xmlFileName, String xsdFileName) throws Exception {
+	public void XmlToXsd(String xmlFileName, String xsdFileName) throws Exception {
 		
 		final Inst2XsdOptions options = new Inst2XsdOptions();
 	    options.setDesign(Inst2XsdOptions.DESIGN_VENETIAN_BLIND);
@@ -434,4 +545,5 @@ public class XmlMain {
 		}
 	    
 	}
+
 }

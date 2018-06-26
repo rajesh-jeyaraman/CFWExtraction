@@ -22,57 +22,9 @@ public class XmlFileExtratorConfig {
 	String producer = null;
 	String sipentity = null;
 	String schema = null;
-	
-	public String getSipOutputFolderPath() {
-		return sipOutputFolderPath;
-	}
+	String processTriggerFileName = null;
+	String datafileNameIndicator = null;
 
-	public void setSipOutputFolderPath(String sipOutputFolderPath) {
-		this.sipOutputFolderPath = sipOutputFolderPath;
-	}
-
-	public String getResponseFolderPath() {
-		return responseFolderPath;
-	}
-
-	public void setResponseFolderPath(String responseFolderPath) {
-		this.responseFolderPath = responseFolderPath;
-	}
-	public String getFilePathSeperator() {
-		return filePathSeperator;
-	}
-
-	public void setFilePathSeperator(String filePathSeperator) {
-		this.filePathSeperator = filePathSeperator;
-	}
-
-	public String getConfigFolderPath() {
-		return configFolderPath;
-	}
-
-	public void setConfigFolderPath(String configFolderPath) {
-		this.configFolderPath = configFolderPath;
-	}
-
-	public String getDataFolderPath() {
-		return dataFolderPath;
-	}
-
-	public void setDataFolderPath(String dataFolderPath) {
-		this.dataFolderPath = dataFolderPath;
-	}
-
-	public String getOutputFolderPath() {
-		return outputFolderPath;
-	}
-
-	public void setOutputFolderPath(String outputFolderPath) {
-		this.outputFolderPath = outputFolderPath;
-	}
-
-
-	
-	
 	XmlFileExtratorConfig(String fileName){
 		this.fileName = fileName;
 		
@@ -104,11 +56,14 @@ public class XmlFileExtratorConfig {
 			sipentity = e.getString("entity");
 			schema = e.getString("schema");
 			
+			processTriggerFileName = e.getString("processTriggerFileName");
+			datafileNameIndicator = e.getString("datafileNameIndicator");
 		}
 		
 		fs.close();
 		return validateInput();
 	}
+	
 	private boolean validateInput() {
 		if(configFolderPath != null) {
 			File f = new File(configFolderPath);
@@ -126,6 +81,165 @@ public class XmlFileExtratorConfig {
 		}
 		return true;
 	}
+		
+	public String getSchema() {
+		return schema;
+	}
+
+	public void setSchema(String schema) {
+		this.schema = schema;
+	}
+
+	public ArrayList<String> getDataDirectoryList(){
+		ArrayList<String> dataDirectories = new ArrayList<String>();
+		
+		// Goto Data folder and check for success notification. 
+		File dataFolder = new File(dataFolderPath);
+		File[] files = dataFolder.listFiles();
+		for(File file: files) {
+			if(file.isDirectory() == true) {
+				dataDirectories.add(dataFolderPath + file.getName() + filePathSeperator);
+			}
+		}
+		return dataDirectories;
+	}
+	
+	public ArrayList<String> getFileList(String directory){
+		ArrayList<String> fileList = new ArrayList<String>();
+		
+		File dataFolder = new File(directory);
+		File[] files = dataFolder.listFiles();
+		for(File file: files) {
+			if(file.isFile() == true) {
+				fileList.add(directory + file.getName());						
+			}
+		}
+		return fileList;
+	}
+	
+	public ArrayList<String> getFileNameList(String directory){
+		ArrayList<String> fileList = new ArrayList<String>();
+		
+		File dataFolder = new File(directory);
+		File[] files = dataFolder.listFiles();
+		for(File file: files) {
+			if(file.isFile() == true) {
+				fileList.add( file.getName());
+			}
+		}
+		return fileList;
+	}
+	
+	public ArrayList<String> getConfigFileList(){
+		ArrayList<String> fileList = new ArrayList<String>();
+		
+		File dataFolder = new File(configFolderPath);
+		File[] files = dataFolder.listFiles();
+		for(File file: files) {
+			if(file.isFile() == true) {
+				if(file.getName().toLowerCase().contains(".xml") ||
+					file.getName().toLowerCase().contains(".json")
+					) {
+					fileList.add(configFolderPath + file.getName());
+				}
+				
+			}
+		}
+		return fileList;
+	}
+	
+	public ArrayList<String> getDataFileList(){
+		ArrayList<String> fileList = new ArrayList<String>();
+		
+		File dataFolder = new File(dataFolderPath);
+		File[] files = dataFolder.listFiles();
+		for(File file: files) {
+			if(file.isFile() == true) {
+				if(file.getName().toLowerCase().contains(".xml") == true){
+					fileList.add(dataFolderPath + file.getName());
+				}
+				
+			}
+		}
+		return fileList;
+	}
+	
+	public boolean isDataFile(String fileName) {
+		boolean status = false;
+		
+		if(datafileNameIndicator == null) {
+			status = true; // Since no identifier is configured, consider all the files are potential data file for extraction. 
+		}
+		if(fileName.toLowerCase().contains(datafileNameIndicator)) {  //TODO: Support for multiple indicator type. For now only one string is configured. _case.xml
+			status = true;
+		}
+		return status;		
+	}
+	
+	public String getSipOutputFolderPath() {
+		return sipOutputFolderPath;
+	}
+
+	public void setSipOutputFolderPath(String sipOutputFolderPath) {
+		this.sipOutputFolderPath = sipOutputFolderPath;
+	}
+
+	public String getResponseFolderPath() {
+		return responseFolderPath;
+	}
+
+	public void setResponseFolderPath(String responseFolderPath) {
+		this.responseFolderPath = responseFolderPath;
+	}
+	
+	public String getFilePathSeperator() {
+		return filePathSeperator;
+	}
+
+	public void setFilePathSeperator(String filePathSeperator) {
+		this.filePathSeperator = filePathSeperator;
+	}
+
+	public String getConfigFolderPath() {
+		return configFolderPath;
+	}
+
+	public void setConfigFolderPath(String configFolderPath) {
+		this.configFolderPath = configFolderPath;
+	}
+
+	public String getDataFolderPath() {
+		return dataFolderPath;
+	}
+
+	public void setDataFolderPath(String dataFolderPath) {
+		this.dataFolderPath = dataFolderPath;
+	}
+
+	public String getOutputFolderPath() {
+		return outputFolderPath;
+	}
+
+	public void setOutputFolderPath(String outputFolderPath) {
+		this.outputFolderPath = outputFolderPath;
+	}
+	
+	public String getProcessTriggerFileName() {
+		return processTriggerFileName;
+	}
+
+	public void setProcessTriggerFileName(String processTriggerFileName) {
+		this.processTriggerFileName = processTriggerFileName;
+	}
+
+	public String getDatafileNameIndicator() {
+		return datafileNameIndicator;
+	}
+
+	public void setDatafileNameIndicator(String datafileNameIndicator) {
+		this.datafileNameIndicator = datafileNameIndicator;
+	}
+
 	public String getSipentity() {
 		return sipentity;
 	}
@@ -158,50 +272,5 @@ public class XmlFileExtratorConfig {
 		this.producer = producer;
 	}
 
-	
-	public String getSchema() {
-		return schema;
-	}
 
-	public void setSchema(String schema) {
-		this.schema = schema;
-	}
-
-	public ArrayList<String> getDataDirectoryList(){
-		ArrayList<String> dataDirectories = new ArrayList<String>();
-		
-		// Goto Data folder and check for success notification. 
-		File dataFolder = new File(dataFolderPath);
-		File[] files = dataFolder.listFiles();
-		for(File file: files) {
-			if(file.isDirectory() == true) {
-				dataDirectories.add(dataFolderPath + file.getName() + filePathSeperator);
-			}
-		}
-		return dataDirectories;
-	}
-	public ArrayList<String> getFileList(String directory){
-		ArrayList<String> fileList = new ArrayList<String>();
-		
-		File dataFolder = new File(directory);
-		File[] files = dataFolder.listFiles();
-		for(File file: files) {
-			if(file.isFile() == true) {
-				fileList.add(directory + file.getName());
-			}
-		}
-		return fileList;
-	}
-	public ArrayList<String> getFileNameList(String directory){
-		ArrayList<String> fileList = new ArrayList<String>();
-		
-		File dataFolder = new File(directory);
-		File[] files = dataFolder.listFiles();
-		for(File file: files) {
-			if(file.isFile() == true) {
-				fileList.add( file.getName());
-			}
-		}
-		return fileList;
-	}
 }
