@@ -98,7 +98,7 @@ public class XmlFileExtratorConfig {
 		File[] files = dataFolder.listFiles();
 		for(File file: files) {
 			if(file.isDirectory() == true) {
-				dataDirectories.add(dataFolderPath + file.getName() + filePathSeperator);
+				dataDirectories.add(dataFolderPath + file.getName() + File.separator);
 			}
 		}
 		return dataDirectories;

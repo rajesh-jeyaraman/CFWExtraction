@@ -18,8 +18,8 @@ public class PackageProcessor extends SipCreator {
 	private String basepath;
 
 	public PackageProcessor(String folder, String holding, String app, String producer, String entity, String schema,
-			String outputPath) {
-		super(holding, app, producer, entity, schema, outputPath);
+			String outputPath, String sipPrefix) {
+		super(holding, app, producer, entity, schema, outputPath, sipPrefix);
 		this.basepath = folder;
 	}
 

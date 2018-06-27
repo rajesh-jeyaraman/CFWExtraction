@@ -57,6 +57,14 @@ public class XmlMain {
 		return false;
 	}
 	
+	public XmlFileExtratorConfig getConfig() {
+		return config;
+	}
+
+	public void setConfig(XmlFileExtratorConfig config) {
+		this.config = config;
+	}
+
 	public static void main(String[] args) {
 		try {
 			XmlMain process = new XmlMain();
@@ -65,13 +73,21 @@ public class XmlMain {
 				System.out.println("XMLFileExtractorConfig.json file is missing");
 				return;
 			}
-			process.start();
+			
+			//Read the configuration setting for this process
+			process.setConfig(new XmlFileExtratorConfig(args[0]));
+			if(process.getConfig().parseFile() == false)return;
+			
+			ArrayList<String> dirList = process.getConfig().getDataDirectoryList();
+			for(String dir: dirList) {
+				process.getConfig().setDataFolderPath(dir);
+				process.start();
+			}
 		}
 		catch(Exception e)
 		{
 			System.out.println(e.getMessage());
 		}
-	
 		
 		return;
 	}
@@ -168,10 +184,7 @@ public class XmlMain {
 	public void start()throws Exception {
 		try {
 			
-			//Read the configuration setting for this process
-			config = new XmlFileExtratorConfig(configFileName);
-			if(config.parseFile() == false)return;
-			
+		
 			//Create a xml file to perform xpath search during data extraction.
 			String xml = getParserConfigAsXml();
 			initDom(xml);
@@ -231,8 +244,8 @@ public class XmlMain {
 			createSip();
 			renameProcessTriggerFile();
 			addTotalFileCount(finaleResponse);
-			XPathUtils.createXML(finaleResponse,config.getResponseFolderPath() + "ARCHIVE_RESPONSE.xml");
-			
+			createResponseFile(finaleResponse);
+						
 			//Delete output folder
 			for(String d: caseNumbers) {
 				String outdir = config.getOutputFolderPath() + d;
@@ -269,7 +282,22 @@ public class XmlMain {
 	
 	}
 	
-	
+	private void createResponseFile(ArrayList<NameValuePair> response) {
+		//Get count of archive response file. 
+		ArrayList<String> fileList = new ArrayList<String>();
+		
+		File responseFolder = new File(config.getResponseFolderPath());
+		File[] files = responseFolder.listFiles();
+		for(File file: files) {
+			if(file.isFile() == true) {
+				if(file.getName().toLowerCase().startsWith("ARCHIVE_RESPONSE") == true){
+					fileList.add(responseFolder + file.getName());
+				}
+			}
+		}
+		XPathUtils.createXML(response,config.getResponseFolderPath() + "ARCHIVE_RESPONSE_"+files.length +".xml");
+	}
+		
 	private void renameProcessTriggerFile() {
 		try {
 			//Rename CFWSuccessNotification.xml file
@@ -322,6 +350,19 @@ public class XmlMain {
 	
 	private void createSip() throws Exception {
 		try {
+			//Get count of existing sip file count. Just not to overwrite already existing files during continuos or loop run.  
+			ArrayList<String> fileList = new ArrayList<String>();
+			
+			File sipFolder = new File(config.getSipOutputFolderPath());
+			File[] files = sipFolder.listFiles();
+			for(File file: files) {
+				if(file.isFile() == true) {
+					if(file.getName().toLowerCase().contains(".zip") == true){
+						fileList.add(sipFolder + file.getName());
+					}
+				}
+			}
+			String str = "SET" + fileList.size();
 			//SIP Creation
 			String folder = config.getOutputFolderPath();
 			String holding = config.getHolding();
@@ -330,7 +371,7 @@ public class XmlMain {
 			String entity = config.getSipentity();
 			String schema = config.getSchema();
 			String outputPath = config.getSipOutputFolderPath(); // sip folder path for output
-			new PackageMain().start(folder, holding, app, producer, entity, schema, outputPath);
+			new PackageMain().start(folder, holding, app, producer, entity, schema, outputPath, str);
 		}
 		catch(Exception e) {
 			System.out.println("Error in creating sip: " + e.getMessage());

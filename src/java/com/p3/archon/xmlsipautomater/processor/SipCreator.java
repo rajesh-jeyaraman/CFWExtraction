@@ -23,7 +23,7 @@ public class SipCreator {
 
 	private BatchSipAssembler<ArchonXml> batchAssembler;
 
-	public SipCreator(String holding, String app, String producer, String entity, String schema, String outputPath) {
+	public SipCreator(String holding, String app, String producer, String entity, String schema, String outputPath, String sipPrefix) {
 
 		PackagingInformation prototype = PackagingInformation.builder().dss().holding(holding).application(app)
 				.producer(producer).entity(entity).schema(schema).end().build();
@@ -44,7 +44,7 @@ public class SipCreator {
 		SipSegmentationStrategy<ArchonXml> segmentationStrategy = SipSegmentationStrategy
 				.byMaxAius(Constants.SPLIT_SIZE);
 		setBatchAssembler(new BatchSipAssembler<>(assembler, segmentationStrategy,
-				FileSupplier.fromDirectory(new File(outputPath), Constants.SIP_PREFIX_NAME, Constants.ZIP)));
+				FileSupplier.fromDirectory(new File(outputPath), Constants.SIP_PREFIX_NAME + sipPrefix, Constants.ZIP)));
 	}
 
 	public BatchSipAssembler<ArchonXml> getBatchAssembler() {
