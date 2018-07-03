@@ -3,16 +3,15 @@ package com.p3.archon.jsonparser.bean;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Nodes {
+public class Children {
 	String frompath;
 	String datatype;
 	String name;
 	boolean search;
 	boolean result;
-	String condition;
 	Long id;
 	String filename;
-	List<Nodes> nodes = new ArrayList<Nodes>();
+	List<Children> children = new ArrayList<Children>();
 
 	public String getFrompath() {
 		return frompath;
@@ -54,14 +53,6 @@ public class Nodes {
 		this.result = result;
 	}
 
-	public String getCondition() {
-		return condition;
-	}
-
-	public void setCondition(String condition) {
-		this.condition = condition;
-	}
-
 	public Long getId() {
 		return id;
 	}
@@ -78,19 +69,18 @@ public class Nodes {
 		this.filename = filename;
 	}
 
-	public List<Nodes> getNodes() {
-		return nodes;
+	public List<Children> getChildren() {
+		return children;
 	}
 
-	public void setNodes(List<Nodes> nodes) {
-		this.nodes = nodes;
+	public void setChildren(List<Children> children) {
+		this.children = children;
 	}
 
 	@Override
 	public String toString() {
 		return "Nodes [frompath=" + frompath + ", datatype=" + datatype + ", name=" + name + ", search=" + search
-				+ ", result=" + result + ", condition=" + condition + ", id=" + id + ", filename=" + filename
-				+ ", nodes=" + nodes + "]";
+				+ ", result=" + result + ", id=" + id + ", filename=" + filename + ", nodes=" + children + "]";
 	}
 
 }

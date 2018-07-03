@@ -8,30 +8,26 @@ import java.util.List;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import com.p3.archon.jsonparser.bean.Children;
 import com.p3.archon.jsonparser.bean.FileModel;
-import com.p3.archon.jsonparser.bean.FinalNodes;
+import com.p3.archon.jsonparser.bean.FinalChildren;
 import com.p3.archon.jsonparser.bean.FinalResult;
-import com.p3.archon.jsonparser.bean.Nodes;
+
 
 public class JsonProcessor {
+	public static List<FinalChildren> resultList = new ArrayList<>();
 
 	public static void readJsonWithObjectMapper(String fileName) throws IOException {
 		ObjectMapper objectMapper = new ObjectMapper();
-		FileModel result = null;
-		try {
-			result = objectMapper.readValue(new File(fileName), FileModel.class);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		FileModel result = objectMapper.readValue(new File(fileName), FileModel.class);
 
-		List<Nodes> nodeList = result.getResult().getNodes();
-		List<FinalNodes> resultList = new ArrayList<>();
+		List<Children> nodeList = result.getResult().getChildren();
 
-		getFinalJson("/" + result.getResult().getName(), resultList, nodeList);
+		getFinalJson("/" + result.getResult().getName(), nodeList);
 
 		FinalResult fr = new FinalResult();
 		fr.setResult(resultList);
-		File file = new File("FinalJson.json");
+		File file = new File("FinalResult.json");
 		file.createNewFile();
 		FileWriter fileWriter = new FileWriter(file);
 		fileWriter.write(new Gson().toJson(fr));
@@ -40,26 +36,26 @@ public class JsonProcessor {
 
 	}
 
-	private static void getFinalJson(String name, List<FinalNodes> resultList, List<Nodes> nodeList) {
-		FinalNodes mNode = new FinalNodes();
-		for (Nodes nodes : nodeList) {
+	private static void getFinalJson(String name, List<Children> nodeList) {
+		for (Children nodes : nodeList) {
+			FinalChildren mNode = new FinalChildren();
 			mNode.setTopath(name + nodes.getFrompath().substring(nodes.getFrompath().lastIndexOf("/"),
 					nodes.getFrompath().length()));
 
-			mNode.setFrompath("/" + nodes.getFrompath());
+			mNode.setFrompath(nodes.getFrompath());
 			mNode.setDatatype(nodes.getDatatype());
 			mNode.setName(nodes.getName());
 			mNode.setSearch(nodes.isSearch());
 			mNode.setResult(nodes.isResult());
-			mNode.setCondition(nodes.getCondition());
 			mNode.setId(nodes.getId());
 			mNode.setFilename(nodes.getFilename());
-			resultList.add(mNode);
-			if (nodes.getNodes().size() > 0) {
-				getFinalJson(name + "/" + nodes.getName(), resultList, nodes.getNodes());
+
+			if (nodes.getChildren().size() > 0) {
+				getFinalJson(name + "/" + nodes.getName(), nodes.getChildren());
+			} else {
+				resultList.add(mNode);
 			}
 		}
 
 	}
-
 }

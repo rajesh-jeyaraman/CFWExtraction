@@ -6,30 +6,35 @@ import java.util.List;
 public class Result {
 	Long id;
 	String name;
-	List<Nodes> nodes = new ArrayList<Nodes>();
-	
+	List<Children> children = new ArrayList<Children>();
+
 	public Long getId() {
 		return id;
 	}
+
 	public void setId(Long id) {
 		this.id = id;
 	}
+
 	public String getName() {
 		return name;
 	}
+
 	public void setName(String name) {
 		this.name = name;
 	}
-	public List<Nodes> getNodes() {
-		return nodes;
+
+	public List<Children> getChildren() {
+		return children;
 	}
-	public void setNodes(List<Nodes> nodes) {
-		this.nodes = nodes;
+
+	public void setChildren(List<Children> children) {
+		this.children = children;
 	}
-	
+
 	@Override
 	public String toString() {
-		return "Result [id=" + id + ", name=" + name + ", nodes=" + nodes + "]";
+		return "Result [id=" + id + ", name=" + name + ", nodes=" + children + "]";
 	}
-	
+
 }

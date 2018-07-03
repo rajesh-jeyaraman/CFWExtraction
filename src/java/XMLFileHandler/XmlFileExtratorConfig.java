@@ -50,18 +50,69 @@ public class XmlFileExtratorConfig {
 			filePathSeperator = e.getString("filePathSeperator");
 			responseFolderPath = e.getString("responseFolderPath");
 			sipOutputFolderPath = e.getString("sipOutputFolderPath");
+			processTriggerFileName = e.getString("processTriggerFileName");
+			datafileNameIndicator = e.getString("datafileNameIndicator");
 			holding = e.getString("holding");
 			appName = e.getString("appName");
 			producer = e.getString("producer");
 			sipentity = e.getString("entity");
 			schema = e.getString("schema");
 			
-			processTriggerFileName = e.getString("processTriggerFileName");
-			datafileNameIndicator = e.getString("datafileNameIndicator");
+			if(outputFolderPath == null) {
+				outputFolderPath = dataFolderPath + "output" + File.separator;
+			}
+			
+			if(processTriggerFileName == null) {
+				processTriggerFileName = "Notification.xml";
+			}
+			
+			createOutDir(outputFolderPath);
+			createDirIfNotExists(sipOutputFolderPath);
+			createDirIfNotExists(responseFolderPath);
 		}
 		
 		fs.close();
 		return validateInput();
+	}
+	private void createOutDir(String dir) {
+		File od = new File(dir);
+		
+		if(!od.exists()) {
+			if(od.mkdir()) {
+				System.out.println(dir + " created");
+			}
+		}
+		else {
+			//Workaround in case outputFolderPath contains any folders or files already -- In windows observed folder and files not getting deleted after sip creation. 
+			ArrayList<String> dirList = new ArrayList<String>();
+			
+			File outputFolder = new File(dir);
+			File[] files = outputFolder.listFiles();
+			for(File file: files) {
+				if(file.isDirectory() == true) {
+					dirList.add(dir + file.getName() + filePathSeperator);
+				}
+			}
+			if(dirList.size() >0) {
+				outputFolderPath = dir + "_" + String.valueOf(dirList.size()) + File.separator;
+				File nod = new File(outputFolderPath);
+				if(!nod.exists()) {
+					if(nod.mkdir()) {
+						System.out.println(outputFolderPath + " created");
+					}
+				}
+			}
+		}
+		
+	}
+	private void createDirIfNotExists(String dir) throws Exception{
+		File od = new File(dir);
+		
+		if(!od.exists()) {
+			if(od.mkdir()) {
+				System.out.println(dir + " created");
+			}
+		}	
 	}
 	
 	private boolean validateInput() {
@@ -98,7 +149,7 @@ public class XmlFileExtratorConfig {
 		File[] files = dataFolder.listFiles();
 		for(File file: files) {
 			if(file.isDirectory() == true) {
-				dataDirectories.add(dataFolderPath + file.getName() + File.separator);
+				dataDirectories.add(dataFolderPath + file.getName() + filePathSeperator);
 			}
 		}
 		return dataDirectories;

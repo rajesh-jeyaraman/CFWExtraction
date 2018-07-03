@@ -54,5 +54,4 @@ public class SipCreator {
 	public void setBatchAssembler(BatchSipAssembler<ArchonXml> batchAssembler) {
 		this.batchAssembler = batchAssembler;
 	}
-
 }

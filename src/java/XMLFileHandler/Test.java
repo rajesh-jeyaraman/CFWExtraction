@@ -2,12 +2,7 @@ package XMLFileHandler;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.io.Writer;
 import java.util.ArrayList;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -24,6 +19,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
 
+import com.p3.archon.jsonparser.JsonProcessor;
 
 import org.apache.xmlbeans.XmlException;
 import org.apache.xmlbeans.XmlObject;
@@ -194,68 +190,26 @@ public static void SAXmain(String[] args) throws Exception {
 	    System.out.println(schemaDocs[0]);
 	}
 	
-	public static void main (String[] args) throws Exception {
-		simulateXmlFile();
-	}
-	public static void simulateXmlFile() {
-		String file1 = "/Users/admin/Documents/test/data/batch1/Processed/CFW-DE-20170112-3_case.xml";
-		String file2 = "/Users/admin/Documents/test/data/batch1/Processed/CFW-DE-20170112-3-1_account.xml";
-		String file3 = "/Users/admin/Documents/test/data/batch1/Processed/CFW-DE-20170112-3-2_account.xml";
-		int srlNum = 1000;
-		int count = 2000;
-		String prefix = "GEN-DE-20180625_";
-	
-		try {
-			for(int i = 0; i < count; ++i ) {
-				String dataStr = getFileData(file1);
-				String caseNum = prefix + srlNum;
-				String str = dataStr.replace("CFW-DE-20170112-3", caseNum);
-				String fileName = prefix + srlNum +"_case.xml";
-				writeFile(str, fileName);
-				
-				String dataStr2 = getFileData(file2);
-				String str2 = dataStr2.replace("CFW-DE-20170112-3", caseNum);
-				String fileName2 = prefix + srlNum +"-1_account.xml";
-				writeFile(str2, fileName2);
-				
-				
-				String dataStr3 = getFileData(file3);
-				String str3 = dataStr2.replace("CFW-DE-20170112-3", caseNum);
-				String fileName3 = prefix + srlNum +"-2_account.xml";
-				writeFile(str3, fileName3);
-				
-				++srlNum;
-				System.out.println("Generated set " + (i + 1));
-			}
-				//System.out.println(str);
-		}
-		catch(Exception e) {
-			System.out.println(e.getMessage());
-		}
-	}
-	public static String getFileData(String file) throws Exception{
-		FileInputStream fs = new FileInputStream(file);
-		Reader fr = new InputStreamReader(fs);
-
-		String str = "";
-		int ch = (char)fr.read();
+	public static void tmain (String[] args) throws Exception {
 		
-		while(ch != -1) {
-			str += (char)ch;
-			ch = fr.read();
-		}
-		fr.close();
-		//System.out.println("xml content is:"+str);
-		return str;
+		System.out.println("I am in main");
+		testJsonParserCode();  
+		
 	}
-	public static void writeFile(String str, String fileName) throws Exception{
-		String dir = "/Users/admin/Documents/test/data/batch2/" + fileName;
-		FileOutputStream fs = new FileOutputStream(dir);
-		Writer fw = new OutputStreamWriter(fs);
+	public static void testJsonParserCode() throws Exception{
 		
-		fw.write(str);
-		fw.close();
+		JsonProcessor.readJsonWithObjectMapper("/Users/admin/Documents/test/config/case.json");
+		ConfigFileParserJson xpath = new ConfigFileParserJson("FinalResult.json");
+		ArrayList<NameValuePair> topath = new ArrayList<NameValuePair>();
 		
+		for(NameValuePair s: xpath.getXpathList() ) {
+			//System.out.println(s.getTopath());
+			topath.add(new NameValuePair(s.getTopath(),"DATA"));
+		}
+		
+		//Create an xml document with collated xpath list
+		String xmlOutput = XPathUtils.createXML(topath, "temp.xml");
+		System.out.println(xmlOutput);
 	}
 
 }

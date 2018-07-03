@@ -38,7 +38,11 @@ public class XmlFileExtract {
 		ConfigFileParserJson caseConfigFile = new ConfigFileParserJson(inConfigFileName);
 		
 		//TO DO: Redefine the xpath. 
-		return caseConfigFile.getXpathList();
+		ArrayList<String> pathList = new ArrayList<String>();
+		for(NameValuePair p: caseConfigFile.getXpathList()) {
+			pathList.add(p.getFrompath());
+		}
+		return pathList;
 	}
 	
 	private ArrayList<NameValuePair> getExtractedXpathList(String inputFileName) throws Exception {

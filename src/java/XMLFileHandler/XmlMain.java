@@ -48,6 +48,7 @@ public class XmlMain {
     private XPath xpath = null;
     int totalFileCount = 0;
     int totalArchiveCount = 0;
+    int totalCaseCount = 0;
 	
 	public boolean setConfigFileName(String configFileName) {
 		if(configFileName != null) {
@@ -67,6 +68,7 @@ public class XmlMain {
 
 	public static void main(String[] args) {
 		try {
+			
 			XmlMain process = new XmlMain();
 			// Initial Validation
 			if(process.setConfigFileName(args[0]) == false) {
@@ -79,6 +81,7 @@ public class XmlMain {
 			if(process.getConfig().parseFile() == false)return;
 			
 			ArrayList<String> dirList = process.getConfig().getDataDirectoryList();
+			dirList.add(process.getConfig().getDataFolderPath());		// Data can be either in main data folder or first level sub-folders. 
 			for(String dir: dirList) {
 				process.getConfig().setDataFolderPath(dir);
 				process.start();
@@ -183,10 +186,8 @@ public class XmlMain {
 	
 	public void start()throws Exception {
 		try {
-			
-		
 			//Create a xml file to perform xpath search during data extraction.
-			String xml = getParserConfigAsXml();
+			String xml = getJsonConfigAsXml(); //getParserConfigAsXml();
 			initDom(xml);
 			
 	        // Data Extraction
@@ -202,43 +203,55 @@ public class XmlMain {
 			ArrayList<String> relatedFiles = null;
 			ArrayList<String> caseNumbers = new ArrayList<String>();
 			
-			int batch = 0;
-			totalFileCount = files.size();
-			totalArchiveCount = 0;
+			NotificationParser cases = new NotificationParser(config.getDataFolderPath() + config.getProcessTriggerFileName());
+			cases.parseFile();
 			
-			for(String file: files) {
-				String caseNumber = null;
-				ArrayList<NameValuePair> fileXpathList =null;
-				
-				try {
-					if(config.isDataFile(file)== true) {
-						++batch;
-						fileXpathList = new ArrayList<NameValuePair>();
-						caseNumber = getCaseNumberFromFileName(file);
-						relatedFiles = getRelatedFilesForCaseNumber(caseNumber,files);
-						fileXpathList = parseAndExtractData(file);  // Based on configuration file, data is extracted.							
-						copyFilesToOutDir(relatedFiles, caseNumber);
-						addSuccessInArchiveResponse(batch, finaleResponse, caseNumber, relatedFiles);
-						
+			int batch = 0;
+			totalFileCount = 0;
+			totalArchiveCount = 0;
+			totalCaseCount = 0;
+			
+			//for(String file: files) {
+			for(NotificationBean caseDtls: cases.getCaseList()) {
+				++totalCaseCount;
+				for(String file: caseDtls.getFiles()) {
+					files.add(config.getDataFolderPath()+file);
+					++totalFileCount;
+					String caseNumber = null;
+					ArrayList<NameValuePair> fileXpathList =null;
+					
+					try {
+						if(config.isDataFile(file)== true) {
+							++batch;
+							fileXpathList = new ArrayList<NameValuePair>();
+							//caseNumber = getCaseNumberFromFileName(file);
+							caseNumber = caseDtls.getCaseNumber();
+							//relatedFiles = getRelatedFilesForCaseNumber(caseNumber,files);
+							relatedFiles = caseDtls.getFiles();
+							fileXpathList = parseAndExtractData(config.getDataFolderPath()+file);  // Based on configuration file, data is extracted.							
+							copyFilesToOutDir(relatedFiles, caseNumber);
+							addSuccessInArchiveResponse(batch, finaleResponse, caseNumber, relatedFiles);
+							
+						}
+						else {
+							System.out.println(file + "Skipping as it is not data file.");
+							continue;
+						}
 					}
-					else {
-						System.out.println(file + "Skipping as it is not data file.");
+					catch(Exception e) {
+						System.out.println("Error in parsing xml file :" + file);
+						File fn = new File(config.getDataFolderPath() + file);
+						NameValuePair error = new NameValuePair(fn.getName(), "Error in parsing Xml:" +e.getMessage() );
+						//Move the file and related file to error directory
+						//copyFilesToOutDir(relatedFiles);
+						addFailureInArchiveResponse(batch, finaleResponse, caseNumber, relatedFiles, error);
 						continue;
 					}
-				}
-				catch(Exception e) {
-					System.out.println("Error in parsing xml file :" + file);
-					File fn = new File(file);
-					NameValuePair error = new NameValuePair(fn.getName(), "Error in parsing Xml:" +e.getMessage() );
-					//Move the file and related file to error directory
-					//copyFilesToOutDir(relatedFiles);
-					addFailureInArchiveResponse(batch, finaleResponse, caseNumber, relatedFiles, error);
-					continue;
-				}
-				addAttachmentTag(fileXpathList, relatedFiles);
-				addToFinalXpathList(batch,fileXpathList, finalXpathList);
-				createOutXmlFile(batch,fileXpathList, caseNumber);
-				caseNumbers.add(caseNumber);
+					addAttachmentTag(fileXpathList, relatedFiles);
+					addToFinalXpathList(batch,fileXpathList, finalXpathList);
+					createOutXmlFile(batch,fileXpathList, caseNumber);
+					caseNumbers.add(caseNumber);
+				 }
 			}
 			//createOutXmlFile(finalXpathList);
 			createSip();
@@ -259,6 +272,7 @@ public class XmlMain {
 					dir.delete();
 				}
 			}
+			
 			//Move files to processed folder
 			String outDir = config.getDataFolderPath() + "Processed";
 			File od = new File(outDir);
@@ -392,10 +406,12 @@ public class XmlMain {
 	}
 	
 	private void addTotalFileCount(ArrayList<NameValuePair> response) {
-		NameValuePair fileCount = new NameValuePair("/ARCHIVE/TOTAL_FILE_COUNT", String.valueOf(--totalFileCount) ); // Notification file removed.
+		NameValuePair fileCount = new NameValuePair("/RESPONSE/TOTAL_FILE_COUNT", String.valueOf(totalFileCount) ); // Notification file removed.
 		response.add(fileCount);
-		NameValuePair archiveFileCount = new NameValuePair("/ARCHIVE/TOTAL_ARCHIVE_FILE_COUNT", String.valueOf(totalArchiveCount) );
+		NameValuePair archiveFileCount = new NameValuePair("/RESPONSE/SUCCESS_FILE_COUNT", String.valueOf(totalArchiveCount) );
 		response.add(archiveFileCount);
+		NameValuePair caseCount = new NameValuePair("/RESPONSE/TOTAL_CASE_COUNT", String.valueOf(totalCaseCount));
+		response.add(caseCount);
 		
 	}
 	
@@ -404,38 +420,44 @@ public class XmlMain {
 		
 		int i = 0;
 		
-		NameValuePair casePath = new NameValuePair("/ARCHIVE/CASEDETAILS["+String.valueOf(idx) +"]/CASENUMBER",caseNumber);
+		NameValuePair casePath = new NameValuePair("/RESPONSE/CASE["+String.valueOf(idx) +"]/CASENUMBER",caseNumber);
 		response.add(casePath);
-		NameValuePair archiveStatus = new NameValuePair("/ARCHIVE/CASEDETAILS["+String.valueOf(idx) +"]/ARCHIVESTATUS","SUCCESS");
-		response.add(archiveStatus);
+		NameValuePair countPath = new NameValuePair("/RESPONSE/CASE["+String.valueOf(idx) +"]/COUNT",String.valueOf(relatedFiles.size()));
+		response.add(countPath);
+
 		
 		for(String dataFile: relatedFiles) {
 			if( dataFile.contains(caseNumber)  == true) {
 				++i;
-				response.add(new NameValuePair(("/ARCHIVE/CASEDETAILS["+String.valueOf(idx) +"]/CASEFILES/FILENAME["+ String.valueOf(i) +"]"),dataFile));
+				response.add(new NameValuePair(("/RESPONSE/CASE["+String.valueOf(idx) +"]/FILENAME["+ String.valueOf(i) +"]"),dataFile));
 			}
 			
 		}
-		response.add(new NameValuePair("/ARCHIVE/CASEDETAILS["+String.valueOf(idx) +"]/ERROR/FILENAME",""));
-		response.add(new NameValuePair("/ARCHIVE/CASEDETAILS["+String.valueOf(idx) +"]/ERROR/CODE",""));
-		response.add(new NameValuePair("/ARCHIVE/CASEDETAILS["+String.valueOf(idx) +"]/ERROR/DESC",""));
+		NameValuePair archiveStatus = new NameValuePair("/RESPONSE/CASE["+String.valueOf(idx) +"]/STATUS","SUCCESS");
+		response.add(archiveStatus);
+		//response.add(new NameValuePair("/RESPONSE/CASE["+String.valueOf(idx) +"]/ERROR/FILENAME",""));
+		//response.add(new NameValuePair("/RESPONSE/CASE["+String.valueOf(idx) +"]/ERROR/CODE",""));
+		//response.add(new NameValuePair("/RESPONSE/CASE["+String.valueOf(idx) +"]/ERROR/DESC",""));
 	}
 	
 	private void addFailureInArchiveResponse(int idx, ArrayList<NameValuePair> response,
 			String caseNumber, ArrayList<String> relatedFiles, NameValuePair error) throws Exception{
 			
-			NameValuePair casePath = new NameValuePair("/ARCHIVE/CASEDETAILS["+String.valueOf(idx) +"]/CASENUMBER",caseNumber);
+			NameValuePair casePath = new NameValuePair("/RESPONSE/CASE["+String.valueOf(idx) +"]/CASENUMBER",caseNumber);
 			response.add(casePath);
-			NameValuePair archiveStatus = new NameValuePair("/ARCHIVE/CASEDETAILS["+String.valueOf(idx) +"]/ARCHIVESTATUS","FAIL");
-			response.add(archiveStatus);
+			NameValuePair countPath = new NameValuePair("/RESPONSE/CASE["+String.valueOf(idx) +"]/COUNT",String.valueOf(relatedFiles.size()));
+			response.add(countPath);
+	
 			int i = 1;
 			for(String dataFile: relatedFiles) {
-				response.add(new NameValuePair(("/ARCHIVE/CASEDETAILS["+String.valueOf(idx) +"]/CASEFILES/FILENAME["+ String.valueOf(i) +"]"),dataFile));
+				response.add(new NameValuePair(("/RESPONSE/CASE["+String.valueOf(idx) +"]/FILENAME["+ String.valueOf(i) +"]"),dataFile));
 				++i;
 			}
-			response.add(new NameValuePair("/ARCHIVE/CASEDETAILS["+String.valueOf(idx) +"]/ERROR[1]/FILENAME",error.getName()));
-			response.add(new NameValuePair("/ARCHIVE/CASEDETAILS["+String.valueOf(idx) +"]/ERROR[1]/CODE","400"));
-			response.add(new NameValuePair("/ARCHIVE/CASEDETAILS["+String.valueOf(idx) +"]/ERROR[1]/DESC",error.getValue()));
+			NameValuePair archiveStatus = new NameValuePair("/RESPONSE/CASE["+String.valueOf(idx) +"]/STATUS","FAIL");
+			response.add(archiveStatus);
+			response.add(new NameValuePair("/RESPONSE/CASE["+String.valueOf(idx) +"]/ERROR[1]/FILENAME",error.getName()));
+			response.add(new NameValuePair("/RESPONSE/CASE["+String.valueOf(idx) +"]/ERROR[1]/CODE","400"));
+			response.add(new NameValuePair("/RESPONSE/CASE["+String.valueOf(idx) +"]/ERROR[1]/DESC",error.getValue()));
 	}
 	
 	private ArrayList<String> getRelatedFilesForCaseNumber(String caseNumber, ArrayList<String> files){
@@ -493,7 +515,7 @@ public class XmlMain {
 		}
 	
 		for(String f: files) {
-			File file = new File(f);
+			File file = new File(config.getDataFolderPath() + f);
 			copyFileUsingStream(file,outdirectory);
 			++totalArchiveCount;
 		}
@@ -585,6 +607,42 @@ public class XmlMain {
 			System.out.println("XmlToXsd: Exception.. " + xsdFileName );
 		}
 	    
+	}
+
+	
+	public String getJsonConfigAsXml() throws Exception{
+		
+		String xmlOutput = null;
+		
+		//Collate all configuration files into one file -- TODO: Revisit this logic
+		ArrayList<String> fileList = config.getFileList(config.getConfigFolderPath());
+		ArrayList<String> configFiles = new ArrayList<String>();
+		for(String f: fileList) {
+			if(f.toLowerCase().contains(".json")== true) {
+				configFiles.add(f);
+			}
+		}
+		if(configFiles.size() ==0 ) {	// Default.. directory always get's added
+			System.out.println("Schema file for extraction is missing in folder " +config.getConfigFolderPath() );
+			return xmlOutput; // TODO: throw exception
+		}
+		
+		configXpathList = new ArrayList<NameValuePair>();
+		for(String file: configFiles) {
+			JsonProcessor.readJsonWithObjectMapper(file);
+			ConfigFileParserJson xpath = new ConfigFileParserJson("FinalResult.json"); 
+			
+			for(NameValuePair s: xpath.getXpathList() ) {
+				//System.out.println(s.getTopath());
+				configXpathList.add(new NameValuePair(s.getTopath(),"DATA"));
+			}
+		
+			//Create an xml document with collated xpath list
+			xmlOutput = XPathUtils.createXML(configXpathList, "temp.xml");
+		}
+		
+		return xmlOutput;
+		
 	}
 
 }

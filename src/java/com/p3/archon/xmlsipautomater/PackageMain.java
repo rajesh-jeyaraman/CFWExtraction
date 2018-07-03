@@ -16,7 +16,7 @@ public class PackageMain {
 		String entity = "test";
 		String schema = "com:ia-xml-schema:1.0";
 		String outputPath = "/Users/malik/Documents/CFW/SIPSAMPLEOutput";
-		new PackageMain().start(folder, holding, app, producer, entity, schema, outputPath, "");
+		new PackageMain().start(folder, holding, app, producer, entity, schema, outputPath,"");
 	}
 
 	public void start(String folder, String holding, String app, String producer, String entity, String schema,

@@ -5,19 +5,19 @@ import java.util.List;
 
 public class FinalJson {
 
-	List<Nodes> nodes = new ArrayList<Nodes>();
+	List<Children> children = new ArrayList<Children>();
 
-	public List<Nodes> getNodes() {
-		return nodes;
+	public List<Children> getChildren() {
+		return children;
 	}
 
-	public void setNodes(List<Nodes> nodes) {
-		this.nodes = nodes;
+	public void setChildren(List<Children> children) {
+		this.children = children;
 	}
 
 	@Override
 	public String toString() {
-		return "FinalJson [nodes=" + nodes + "]";
+		return "FinalJson [nodes=" + children + "]";
 	}
 
 }

@@ -1,13 +1,12 @@
 package com.p3.archon.jsonparser.bean;
 
-public class FinalNodes {
+public class FinalChildren {
 	String frompath;
 	String topath;
 	String datatype;
 	String name;
 	boolean search;
 	boolean result;
-	String condition;
 	Long id;
 	String filename;
 
@@ -57,14 +56,6 @@ public class FinalNodes {
 
 	public void setResult(boolean result) {
 		this.result = result;
-	}
-
-	public String getCondition() {
-		return condition;
-	}
-
-	public void setCondition(String condition) {
-		this.condition = condition;
 	}
 
 	public Long getId() {

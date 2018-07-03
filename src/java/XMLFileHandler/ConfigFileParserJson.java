@@ -12,7 +12,7 @@ public class ConfigFileParserJson {
 
 	private String fileName = null;
 	JSONArray entityList = null; 
-	ArrayList<String> xpaths = null;
+	ArrayList<NameValuePair> xpaths = null;
 	
 	ConfigFileParserJson(String fileName){
 		this.fileName = fileName;
@@ -24,19 +24,18 @@ public class ConfigFileParserJson {
 		JSONObject obj = new JSONObject(fs);
 		entityList = new JSONArray(obj.getJSONArray("result"));
 		
-		xpaths = new ArrayList<String>();
+		xpaths = new ArrayList<NameValuePair>();
 		
 		for(Object entity: entityList) {
 			JSONObject e = (JSONObject) entity;
 			//System.out.println(e.getString("path"));
-			xpaths.add(e.getString("path"));
-			
+			xpaths.add(getProperties(e));
 		}
 		
 		fs.close();
 	}
 	
-	public ArrayList<String> getXpathList() throws Exception {
+	public ArrayList<NameValuePair> getXpathList() throws Exception {
 		
 		if(entityList == null) {
 			parseFile();
@@ -52,6 +51,17 @@ public class ConfigFileParserJson {
 		}
 		
 		return entityList;
+	}
+	public NameValuePair getProperties(JSONObject e) throws Exception {
+		NameValuePair n = new NameValuePair(e.getString("frompath"), "");
+		
+		n.setTopath(e.getString("topath"));
+		n.setDatatype(e.getString("datatype"));
+		n.setFieldName(e.getString("name"));
+		n.setSearch(e.getString("search"));
+		n.setResult(e.getString("result"));
+		n.setId(e.getString("id"));
+		return n;
 	}
 	
 }
