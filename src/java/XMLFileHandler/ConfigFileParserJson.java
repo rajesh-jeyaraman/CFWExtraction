@@ -64,4 +64,20 @@ public class ConfigFileParserJson {
 		return n;
 	}
 	
+	public String getDataType(NameValuePair element) {
+		String str = DATATYPE.STRING;
+		
+		for(NameValuePair p: xpaths) {
+			String path1 = XPathUtils.removeAttr(element.getName());
+			String path2 = XPathUtils.removeAttr(p.getName());
+			if(path1.equalsIgnoreCase(path2)) {
+				str = p.getDatatype();
+				System.out.println(str);
+			}
+			//System.out.println(p.getName());
+		}
+		
+		return str;
+	}
+	
 }

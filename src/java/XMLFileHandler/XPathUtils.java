@@ -244,4 +244,22 @@ public class XPathUtils {
 		
 		return attr;
 	}
+	public static String removeAttr(String input) {
+		String str = "";
+		char ATTRSTART = '[';
+		char ATTREND = ']';
+		boolean skip = false;
+		for(int i = 0 ;  i< input.length();++i ) {
+			if(input.charAt(i) == ATTRSTART) {
+				skip = true;
+			}
+			if(skip == false) {
+				str +=input.charAt(i);
+			}
+			if(input.charAt(i) == ATTREND) {
+				skip = false;
+			}
+		}
+		return str;
+	}
 }

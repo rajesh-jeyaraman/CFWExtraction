@@ -75,6 +75,9 @@ public class NotificationParser {
 				bean.addFile(val);
 				++fileCount;
 			}
+			if(child.getNodeName().equalsIgnoreCase("CASETYPE")==true) {
+				bean.setCaseType(val);				
+			}
 		}
 		bean.setFileCount(fileCount);
 		
@@ -84,6 +87,7 @@ public class NotificationParser {
 	private void printCaseList() {
 		for(NotificationBean b: caseList) {
 			System.out.println("CASENUMBER:" + b.getCaseNumber());
+			System.out.println("CASETYPE:" + b.getCaseType());
 			System.out.println("COUNT:" + b.getFileCount());
 			for(String file: b.getFiles()) {
 				System.out.println("FILENAME:" + file);

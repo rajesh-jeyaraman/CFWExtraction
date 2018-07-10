@@ -10,8 +10,9 @@ public class Children {
 	boolean search;
 	boolean result;
 	Long id;
-	String filename;
+	String filename;	
 	List<Children> children = new ArrayList<Children>();
+	String hasChildren;
 
 	public String getFrompath() {
 		return frompath;
@@ -77,10 +78,18 @@ public class Children {
 		this.children = children;
 	}
 
+	public String getHasChildren() {
+		return hasChildren;
+	}
+
+	public void setHasChildren(String hasChildren) {
+		this.hasChildren = hasChildren;
+	}
+
 	@Override
 	public String toString() {
 		return "Nodes [frompath=" + frompath + ", datatype=" + datatype + ", name=" + name + ", search=" + search
-				+ ", result=" + result + ", id=" + id + ", filename=" + filename + ", nodes=" + children + "]";
+				+ ", result=" + result + ", id=" + id + ", filename=" + filename + ", nodes=" + children + ", hasChildren="+ hasChildren +"]";
 	}
 
 }

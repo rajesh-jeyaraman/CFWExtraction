@@ -6,11 +6,13 @@ public class NotificationBean {
 	private String caseNumber;
 	private int fileCount;
 	private ArrayList<String> files;
+	private String caseType;
 	
 	public NotificationBean() {
 		caseNumber = "";
 		fileCount = 0;
 		files = new ArrayList<String>();
+		caseType = "";
 	}
 	
 	public String getCaseNumber() {
@@ -33,6 +35,14 @@ public class NotificationBean {
 	}
 	public void addFile(String fileName) {
 		files.add(fileName);
+	}
+
+	public String getCaseType() {
+		return caseType;
+	}
+
+	public void setCaseType(String caseType) {
+		this.caseType = caseType;
 	}
 	
 	

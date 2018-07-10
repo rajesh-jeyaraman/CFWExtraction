@@ -190,10 +190,11 @@ public static void SAXmain(String[] args) throws Exception {
 	    System.out.println(schemaDocs[0]);
 	}
 	
-	public static void tmain (String[] args) throws Exception {
+	public static void main (String[] args) throws Exception {
 		
 		System.out.println("I am in main");
-		testJsonParserCode();  
+		//testJsonParserCode();  
+		testDate(args);
 		
 	}
 	public static void testJsonParserCode() throws Exception{
@@ -203,7 +204,7 @@ public static void SAXmain(String[] args) throws Exception {
 		ArrayList<NameValuePair> topath = new ArrayList<NameValuePair>();
 		
 		for(NameValuePair s: xpath.getXpathList() ) {
-			//System.out.println(s.getTopath());
+			System.out.println(s.getTopath());
 			topath.add(new NameValuePair(s.getTopath(),"DATA"));
 		}
 		
@@ -211,5 +212,25 @@ public static void SAXmain(String[] args) throws Exception {
 		String xmlOutput = XPathUtils.createXML(topath, "temp.xml");
 		System.out.println(xmlOutput);
 	}
+	
+
+		
+		public static String iaDateFormat(String date_vals){
+			String IA_formatter_date = date_vals.substring(0,4) + "-" +date_vals.substring(4,6) + "-" + date_vals.substring(6,8)
+										+ " " + date_vals.substring(9,11) +":"+date_vals.substring(11,13) +":"+ date_vals.substring(13,15);
+			return IA_formatter_date;
+		}
+		
+		public static void testDate(String args[]){
+		//	if(args.length == 0){
+		//		System.out.println("Date input needed.");
+		//		System.exit();
+		//	}
+		//	String given_date = args[0];
+			String given_date = "20170112T142055.597 GMT";
+			String[] date_vals = given_date.split("[.]");
+			System.out.println(iaDateFormat(date_vals[0]));
+		}
+
 
 }
