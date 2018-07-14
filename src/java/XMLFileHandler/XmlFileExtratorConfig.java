@@ -226,6 +226,18 @@ public class XmlFileExtratorConfig {
 		}
 		return status;		
 	}
+	public boolean isDataFile(String fileName,String caseNumber) {
+		boolean status = false;
+		
+		if(datafileNameIndicator == null) {
+			status = true; // Since no identifier is configured, consider all the files are potential data file for extraction. 
+		}
+		if(fileName.contains(caseNumber+datafileNameIndicator)) {  //TODO: Support for multiple indicator type. For now only one string is configured. _case.xml
+			status = true;
+		}
+		
+		return status;		
+	}
 	
 	public String getSipOutputFolderPath() {
 		return sipOutputFolderPath;

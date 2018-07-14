@@ -7,6 +7,7 @@ public class Result {
 	Long id;
 	String name;
 	List<Children> children = new ArrayList<Children>();
+	String hasChildren;
 
 	public Long getId() {
 		return id;
@@ -31,10 +32,20 @@ public class Result {
 	public void setChildren(List<Children> children) {
 		this.children = children;
 	}
+	
+	
+
+	public String getHasChildren() {
+		return hasChildren;
+	}
+
+	public void setHasChildren(String hasChildren) {
+		this.hasChildren = hasChildren;
+	}
 
 	@Override
 	public String toString() {
-		return "Result [id=" + id + ", name=" + name + ", nodes=" + children + "]";
+		return "Result [id=" + id + ", name=" + name + ", nodes=" + children + ", hasChildren=" + hasChildren +"]";
 	}
 
 }

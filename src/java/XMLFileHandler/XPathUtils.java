@@ -100,13 +100,15 @@ public class XPathUtils {
 		OutputFormat format = OutputFormat.createPrettyPrint();
 		//format.setEncoding("ISO-8859-1");
 		format.setEncoding("UTF-8");
+		
 		StringWriter writer = new StringWriter();
 		XMLWriter xmlwriter = new XMLWriter(writer, format);
 		try {
 			xmlwriter.write( document );
 			//LOGGER.debug(writer.getBuffer().toString());
 			//System.out.println(writer.getBuffer().toString());
-			 str = writer.getBuffer().toString();
+			 String temp = writer.getBuffer().toString();
+			 str = temp.replace("<ArchiveResponse>", "<ArchiveResponse xmlns=\"urn:x-otx:eas:schema:archive:1.0\">");
 			//System.out.println(str);
 			if(fileName != null) {
 				try {

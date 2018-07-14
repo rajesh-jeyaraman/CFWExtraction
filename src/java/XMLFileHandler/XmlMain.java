@@ -41,6 +41,8 @@ public class XmlMain {
 	private  XmlFileExtratorConfig config = null;
 	private  String configFileName = null;
 	private  ArrayList<NameValuePair> configXpathList = null;
+	private ArrayList<NameValuePair> mandatoryXpathList = null;
+
 	
 	private DocumentBuilderFactory factory = null;
     private DocumentBuilder builder = null;
@@ -99,6 +101,16 @@ public class XmlMain {
 		
 		return;
 	}
+//	public static void main(String[] args) {
+//		
+//		ArrayList<NameValuePair> response = new ArrayList<NameValuePair>();
+//		NameValuePair xmlns = new NameValuePair("/ArchiveResponse[xmlns]","urn:x-otx:eas:schema:archive:1.0");
+//		//response.add(xmlns);
+//		NameValuePair element = new NameValuePair("/ArchiveResponse/Case/Number","12344");
+//		response.add(element);
+//		XPathUtils.createXML(response,"/Users/admin/Documents/test/" + "ArchiveResponse.xml");
+//	}
+//	
 	
 	public String getParserConfigAsXml()throws Exception {
 
@@ -178,7 +190,7 @@ public class XmlMain {
 	
 	public static String iaDateTimeFormat(String date_vals){
 		String IA_formatter_date = date_vals.substring(0,4) + "-" +date_vals.substring(4,6) + "-" + date_vals.substring(6,8)
-									+ "T" + date_vals.substring(9,11) +":"+date_vals.substring(11,13) +":"+ date_vals.substring(13,15);
+									+ "T" + date_vals.substring(9,11) +":"+date_vals.substring(11,13) +":"+ date_vals.substring(13,19);
 		return IA_formatter_date;
 	}
 	
@@ -187,13 +199,44 @@ public class XmlMain {
 		return IA_formatter_date;
 	}
 	
+	public NameValuePair CheckMandatoryTags(ArrayList<NameValuePair> dataList) throws Exception	{
+		NameValuePair error = null;
+		
+		if(mandatoryXpathList == null) {
+			ConfigFileParserJson xpath = new ConfigFileParserJson("FinalResult.json"); 
+			xpath.getXpathList();
+			mandatoryXpathList = xpath.getMandatoryXPaths();
+		}
 	
+		//TODO; Check for mandatory tags
+		for(NameValuePair tag: mandatoryXpathList) {
+			String str = removeAttr(tag.getName());
+			boolean tagFound = false;
+			for(NameValuePair data: dataList) {
+				String dataPath = removeAttr(data.getName());
+				if(str.equals(dataPath)) {
+					if(data.getValue().trim() != "") {
+						tagFound = true;
+					}
+					break;
+				}
+			}
+			if(tagFound == false) {
+				error = new NameValuePair(tag.getName(), tag.getName() + " - Mandatory Element is not found in the input data file. ");
+				break;
+			}
+		}
+		
+		return error;
+	}
+		
 	public ArrayList<NameValuePair> parseAndExtractData(String xmlFileName) throws Exception {
 		
 		ArrayList<NameValuePair> dataXpaths = getXpathListFromXml(xmlFileName);		
 		ArrayList<NameValuePair> unorderXpathList = new ArrayList<NameValuePair>();
 		ConfigFileParserJson xpath = new ConfigFileParserJson("FinalResult.json"); 
 		xpath.getXpathList();
+		mandatoryXpathList = xpath.getMandatoryXPaths();
 
 		for(NameValuePair data: dataXpaths) {
 			
@@ -212,13 +255,15 @@ public class XmlMain {
 			}
 			
 		}							
+		
 		return getOrderedList(unorderXpathList, configXpathList);
 	}
 	
+	
+
 	public void start()throws Exception {
 		try {
-
-			
+						
 	        // Data Extraction
 			ArrayList<NameValuePair> finaleResponse = new ArrayList<NameValuePair>();
 
@@ -240,6 +285,7 @@ public class XmlMain {
 			totalArchiveCount = 0;
 			totalCaseCount = 0;
 			
+		
 			//for(String file: files) {
 			for(NotificationBean caseDtls: cases.getCaseList()) {
 				
@@ -249,10 +295,9 @@ public class XmlMain {
 					files.add(config.getDataFolderPath()+file);
 					++totalFileCount;
 					String caseNumber = null;
-					
-					
+				
 					try {
-						if(config.isDataFile(file)== true) {
+						if(config.isDataFile(file,caseDtls.getCaseNumber())== true) {
 							dataFileFound = true;
 							++batch;
 							fileXpathList = new ArrayList<NameValuePair>();
@@ -261,6 +306,17 @@ public class XmlMain {
 							//relatedFiles = getRelatedFilesForCaseNumber(caseNumber,files);
 							relatedFiles = caseDtls.getFiles();
 							fileXpathList = parseAndExtractData(config.getDataFolderPath()+file);  // Based on configuration file, data is extracted.	
+		
+							NameValuePair mandatoryErr = CheckMandatoryTags(fileXpathList);
+							if( mandatoryErr != null) {
+								System.out.println("Error in parsing xml file : " + file);
+								File fn = new File(config.getDataFolderPath() + file);
+								NameValuePair error = new NameValuePair(fn.getName(), "Error in parsing xml file : " + mandatoryErr.getValue() );
+								//Move the file and related file to error directory
+								//copyFilesToOutDir(relatedFiles);
+								addFailureInArchiveResponse(batch, finaleResponse, caseNumber, relatedFiles, caseDtls.getCaseType(), error, "400");
+								continue;
+							}
 							boolean stat = true;
 							for(String f: relatedFiles) {
 								try {
@@ -373,12 +429,13 @@ public class XmlMain {
 		File[] files = responseFolder.listFiles();
 		for(File file: files) {
 			if(file.isFile() == true) {
-				if(file.getName().toLowerCase().startsWith("ARCHIVE_RESPONSE") == true){
+				if(file.getName().toLowerCase().startsWith("ArchiveResponse") == true){
 					fileList.add(responseFolder + file.getName());
 				}
 			}
 		}
-		XPathUtils.createXML(response,config.getResponseFolderPath() + "ARCHIVE_RESPONSE_"+files.length +".xml");
+		
+		XPathUtils.createXML(response,config.getResponseFolderPath() + "ArchiveResponse_"+files.length +".xml");
 	}
 		
 	private void renameProcessTriggerFile() {
@@ -487,11 +544,11 @@ public class XmlMain {
 	}
 	
 	private void addTotalFileCount(ArrayList<NameValuePair> response) {
-		NameValuePair fileCount = new NameValuePair("/RESPONSE/TOTALFILECOUNT", String.valueOf(totalFileCount) ); // Notification file removed.
+		NameValuePair fileCount = new NameValuePair("/ArchiveResponse/TotalFileCount", String.valueOf(totalFileCount) ); // Notification file removed.
 		response.add(fileCount);
-		NameValuePair archiveFileCount = new NameValuePair("/RESPONSE/SUCCESSFILECOUNT", String.valueOf(totalArchiveCount) );
+		NameValuePair archiveFileCount = new NameValuePair("/ArchiveResponse/SuccessFileCount", String.valueOf(totalArchiveCount) );
 		response.add(archiveFileCount);
-		NameValuePair caseCount = new NameValuePair("/RESPONSE/TOTALCASECOUNT", String.valueOf(totalCaseCount));
+		NameValuePair caseCount = new NameValuePair("/ArchiveResponse/TotalCaseCount", String.valueOf(totalCaseCount));
 		response.add(caseCount);
 		
 	}
@@ -501,11 +558,11 @@ public class XmlMain {
 		
 		int i = 0;
 		
-		NameValuePair casePath = new NameValuePair("/RESPONSE/CASE["+String.valueOf(idx) +"]/CASENUMBER",caseNumber);
+		NameValuePair casePath = new NameValuePair("/ArchiveResponse/CaseList/Case["+String.valueOf(idx) +"]/CaseNumber",caseNumber);
 		response.add(casePath);
-		NameValuePair caseTypePath = new NameValuePair("/RESPONSE/CASE[" +String.valueOf(idx)+"]/CASETYPE", caseType);
+		NameValuePair caseTypePath = new NameValuePair("/ArchiveResponse/CaseList/Case[" +String.valueOf(idx)+"]/CaseType", caseType);
 		response.add(caseTypePath);
-		NameValuePair countPath = new NameValuePair("/RESPONSE/CASE["+String.valueOf(idx) +"]/COUNT",String.valueOf(relatedFiles.size()));
+		NameValuePair countPath = new NameValuePair("/ArchiveResponse/CaseList/Case["+String.valueOf(idx) +"]/Count",String.valueOf(relatedFiles.size()));
 		response.add(countPath);
 		
 		totalArchiveCount += relatedFiles.size();
@@ -514,40 +571,43 @@ public class XmlMain {
 		for(String dataFile: relatedFiles) {
 			if( dataFile.contains(caseNumber)  == true) {
 				++i;
-				response.add(new NameValuePair(("/RESPONSE/CASE["+String.valueOf(idx) +"]/FILENAME["+ String.valueOf(i) +"]"),dataFile));
+				response.add(new NameValuePair(("/ArchiveResponse/CaseList/Case["+String.valueOf(idx) +"]/FileList/FileName["+ String.valueOf(i) +"]"),dataFile));
 			}
 			
 		}
-		NameValuePair archiveStatus = new NameValuePair("/RESPONSE/CASE["+String.valueOf(idx) +"]/STATUS","SUCCESS");
+		NameValuePair archiveStatus = new NameValuePair("/ArchiveResponse/CaseList/Case["+String.valueOf(idx) +"]/Status","SUCCESS");
 		response.add(archiveStatus);
 		//response.add(new NameValuePair("/RESPONSE/CASE["+String.valueOf(idx) +"]/ERROR/FILENAME",""));
 		//response.add(new NameValuePair("/RESPONSE/CASE["+String.valueOf(idx) +"]/ERROR/CODE",""));
 		//response.add(new NameValuePair("/RESPONSE/CASE["+String.valueOf(idx) +"]/ERROR/DESC",""));
 	}
-	
 	private void addFailureInArchiveResponse(int idx, ArrayList<NameValuePair> response,
 			String caseNumber, ArrayList<String> relatedFiles, String caseType, NameValuePair error, String errorCode) throws Exception{
+		addFailureInArchiveResponse(idx,response,caseNumber,relatedFiles, caseType, error, errorCode, 1);
+	}
+	private void addFailureInArchiveResponse(int idx, ArrayList<NameValuePair> response,
+			String caseNumber, ArrayList<String> relatedFiles, String caseType, NameValuePair error, String errorCode, int errorCnt) throws Exception{
+			String errIdx = String.valueOf(errorCnt);
 			
-			
-			NameValuePair casePath = new NameValuePair("/RESPONSE/CASE["+String.valueOf(idx) +"]/CASENUMBER",caseNumber);
+			NameValuePair casePath = new NameValuePair("/ArchiveResponse/CaseList/Case["+String.valueOf(idx) +"]/CaseNumber",caseNumber);
 			response.add(casePath);
-			NameValuePair caseTypePath = new NameValuePair("/RESPONSE/CASE[" +String.valueOf(idx)+"]/CASETYPE", caseType);
+			NameValuePair caseTypePath = new NameValuePair("/ArchiveResponse/CaseList/Case[" +String.valueOf(idx)+"]/CaseType", caseType);
 			response.add(caseTypePath);
-			NameValuePair countPath = new NameValuePair("/RESPONSE/CASE["+String.valueOf(idx) +"]/COUNT",String.valueOf(relatedFiles.size()));
+			NameValuePair countPath = new NameValuePair("/ArchiveResponse/CaseList/Case["+String.valueOf(idx) +"]/Count",String.valueOf(relatedFiles.size()));
 			response.add(countPath);
 	
 			++totalCaseCount;
 			
 			int i = 1;
 			for(String dataFile: relatedFiles) {
-				response.add(new NameValuePair(("/RESPONSE/CASE["+String.valueOf(idx) +"]/FILENAME["+ String.valueOf(i) +"]"),dataFile));
+				response.add(new NameValuePair(("/ArchiveResponse/CaseList/Case["+String.valueOf(idx) +"]/FileList/FileName["+ String.valueOf(i) +"]"),dataFile));
 				++i;
 			}
-			NameValuePair archiveStatus = new NameValuePair("/RESPONSE/CASE["+String.valueOf(idx) +"]/STATUS","FAIL");
+			NameValuePair archiveStatus = new NameValuePair("/ArchiveResponse/CaseList/Case["+String.valueOf(idx) +"]/Status","FAIL");
 			response.add(archiveStatus);
-			response.add(new NameValuePair("/RESPONSE/CASE["+String.valueOf(idx) +"]/ERROR[1]/FILENAME",error.getName()));
-			response.add(new NameValuePair("/RESPONSE/CASE["+String.valueOf(idx) +"]/ERROR[1]/CODE",errorCode));
-			response.add(new NameValuePair("/RESPONSE/CASE["+String.valueOf(idx) +"]/ERROR[1]/DESC",error.getValue()));
+			response.add(new NameValuePair("/ArchiveResponse/CaseList/Case["+String.valueOf(idx) +"]/ErrorList/Error["+errIdx+"]/FileName",error.getName()));
+			response.add(new NameValuePair("/ArchiveResponse/CaseList/Case["+String.valueOf(idx) +"]/ErrorList/Error["+errIdx+"]/Code",errorCode));
+			response.add(new NameValuePair("/ArchiveResponse/CaseList/Case["+String.valueOf(idx) +"]/ErrorList/Error["+errIdx+"]/Desc",error.getValue()));
 	}
 	
 	private ArrayList<String> getRelatedFilesForCaseNumber(String caseNumber, ArrayList<String> files){

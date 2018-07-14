@@ -49,6 +49,8 @@ public class JsonProcessor {
 			mNode.setResult(nodes.isResult());
 			mNode.setId(nodes.getId());
 			mNode.setFilename(nodes.getFilename());
+			mNode.setMinoccurance(nodes.getMinoccurance());
+			mNode.setMaxoccurance(nodes.getMaxoccurance());
 
 			if (nodes.getChildren().size() > 0) {
 				getFinalJson(name + "/" + nodes.getName(), nodes.getChildren());

@@ -10,6 +10,8 @@ public class NameValuePair {
 	private String search;
 	private String result;
 	private String id;
+	private String minOccur;
+	private String maxOccur;
 	
 	NameValuePair(String name, String value){
 		this.name = name;
@@ -21,6 +23,8 @@ public class NameValuePair {
 		this.search = "true";
 		this.result = "true";
 		this.id = "";
+		this.minOccur = "0";
+		this.maxOccur = "";
 	}
 	public String getName() {
 		return name;
@@ -76,6 +80,18 @@ public class NameValuePair {
 	}
 	public void setId(String id) {
 		this.id = id;
+	}
+	public String getMinOccur() {
+		return minOccur;
+	}
+	public void setMinOccur(String minOccur) {
+		this.minOccur = minOccur;
+	}
+	public String getMaxOccur() {
+		return maxOccur;
+	}
+	public void setMaxOccur(String maxOccur) {
+		this.maxOccur = maxOccur;
 	}
 	
 

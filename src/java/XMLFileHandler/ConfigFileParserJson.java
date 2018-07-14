@@ -13,6 +13,7 @@ public class ConfigFileParserJson {
 	private String fileName = null;
 	JSONArray entityList = null; 
 	ArrayList<NameValuePair> xpaths = null;
+	ArrayList<NameValuePair> mandatoryXPaths = null;
 	
 	ConfigFileParserJson(String fileName){
 		this.fileName = fileName;
@@ -25,11 +26,17 @@ public class ConfigFileParserJson {
 		entityList = new JSONArray(obj.getJSONArray("result"));
 		
 		xpaths = new ArrayList<NameValuePair>();
+		mandatoryXPaths = new ArrayList<NameValuePair>();
 		
 		for(Object entity: entityList) {
 			JSONObject e = (JSONObject) entity;
 			//System.out.println(e.getString("path"));
-			xpaths.add(getProperties(e));
+			NameValuePair prop = getProperties(e);
+			xpaths.add(prop);
+			if(prop.getMinOccur().equals("1") == true) {
+				mandatoryXPaths.add(prop);
+				//System.out.println("Mandatory Xpath" + prop.getTopath());
+			}
 		}
 		
 		fs.close();
@@ -43,7 +50,15 @@ public class ConfigFileParserJson {
 		
 		return xpaths;
 	}
-	
+		
+	public ArrayList<NameValuePair> getMandatoryXPaths() {
+		return mandatoryXPaths;
+	}
+
+	public void setMandatoryXPaths(ArrayList<NameValuePair> mandatoryXPaths) {
+		this.mandatoryXPaths = mandatoryXPaths;
+	}
+
 	public JSONArray getObjectList() throws Exception {
 		
 		if(entityList == null) {
@@ -54,13 +69,15 @@ public class ConfigFileParserJson {
 	}
 	public NameValuePair getProperties(JSONObject e) throws Exception {
 		NameValuePair n = new NameValuePair(e.getString("frompath"), "");
-		
+
 		n.setTopath(e.getString("topath"));
 		n.setDatatype(e.getString("datatype"));
 		n.setFieldName(e.getString("name"));
 		n.setSearch(e.getString("search"));
 		n.setResult(e.getString("result"));
 		n.setId(e.getString("id"));
+		n.setMinOccur(e.getString("minoccurance"));
+		n.setMaxOccur(e.getString("maxoccurance"));
 		return n;
 	}
 	
@@ -72,7 +89,7 @@ public class ConfigFileParserJson {
 			String path2 = XPathUtils.removeAttr(p.getName());
 			if(path1.equalsIgnoreCase(path2)) {
 				str = p.getDatatype();
-				System.out.println(str);
+				//System.out.println(str);
 			}
 			//System.out.println(p.getName());
 		}

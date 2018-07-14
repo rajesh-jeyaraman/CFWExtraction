@@ -1,18 +1,26 @@
 package XMLFileHandler;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 public class NotificationBean {
 	private String caseNumber;
 	private int fileCount;
 	private ArrayList<String> files;
 	private String caseType;
+	private boolean errorFlg;
+	private ArrayList<String> errorList = null;
+	private ArrayList<String> errorFileList = null;
 	
 	public NotificationBean() {
 		caseNumber = "";
 		fileCount = 0;
 		files = new ArrayList<String>();
 		caseType = "";
+		errorFlg = false;
+		errorList = new ArrayList<String>();
+		errorFileList = new ArrayList<String>();
 	}
 	
 	public String getCaseNumber() {
@@ -43,6 +51,14 @@ public class NotificationBean {
 
 	public void setCaseType(String caseType) {
 		this.caseType = caseType;
+	}
+
+	public boolean isErrorFlg() {
+		return errorFlg;
+	}
+
+	public void setErrorFlg(boolean errorFlg) {
+		this.errorFlg = errorFlg;
 	}
 	
 	

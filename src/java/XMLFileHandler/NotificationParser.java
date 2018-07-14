@@ -32,7 +32,8 @@ public class NotificationParser {
 	}
 	
 	public static void test(String args[])throws Exception{
-		NotificationParser p = new NotificationParser("/Users/admin/Documents/test/Details/Notification.xml");
+		System.out.println("I am in NotificationParser : Main()");
+		NotificationParser p = new NotificationParser("/Users/admin/Documents/test/data/Notification.xml");
 		p.parseFile();
 				
 	}
@@ -40,13 +41,13 @@ public class NotificationParser {
 	public void parseFile() throws Exception {
 		// Creating a dom object to search xpath during extraction.
 		factory = DocumentBuilderFactory.newInstance();
-        factory.setNamespaceAware(true); // never forget this!
+        factory.setNamespaceAware(false); // never forget this!
         builder = factory.newDocumentBuilder();
         doc = builder.parse(fileName);
         xpathfactory = XPathFactory.newInstance();
         xpath = xpathfactory.newXPath();
         
-        XPathExpression expr = xpath.compile("/NOTIFY/CASE");
+        XPathExpression expr = xpath.compile("/ArchiveNotify/CaseList/Case");
         
         Object result = expr.evaluate(doc, XPathConstants.NODESET);
         NodeList nodes = (NodeList) result;
@@ -59,42 +60,60 @@ public class NotificationParser {
 	    printCaseList();
 	}
 	
-	private NotificationBean getCase(Node n) {
+	private NotificationBean getCase(Node n) throws Exception{
 		NotificationBean bean = new NotificationBean();
 		NodeList nodes = n.getChildNodes();
 		int fileCount = 0;
 		for(int i=0; i<nodes.getLength(); ++i) {
 			Node child = nodes.item(i);
-			String str = child.getNodeName();
-			String val = child.getTextContent();
-			
-			if(child.getNodeName().equalsIgnoreCase("CASENUMBER")== true) {
-				bean.setCaseNumber(val);				
+
+			if(child.getNodeName().equalsIgnoreCase("CaseNumber")== true) {
+				bean.setCaseNumber(child.getTextContent().trim());				
 			}
-			if(child.getNodeName().equalsIgnoreCase("FILENAME")==true) {
-				bean.addFile(val);
-				++fileCount;
+			if(child.getNodeName().equalsIgnoreCase("FileList")==true) {
+				NodeList fileList = child.getChildNodes();
+				for(int j=0; j< fileList.getLength(); ++j ) {
+					Node file = fileList.item(j);
+					if(file.getNodeName().equalsIgnoreCase("FileName")==true) {						
+						bean.addFile(file.getTextContent().trim());
+						++fileCount;
+					}
+				}
 			}
-			if(child.getNodeName().equalsIgnoreCase("CASETYPE")==true) {
-				bean.setCaseType(val);				
+			if(child.getNodeName().equalsIgnoreCase("CaseType")==true) {
+				bean.setCaseType(child.getTextContent().trim());				
 			}
 		}
 		bean.setFileCount(fileCount);
+		
+		//Check if case number matches with File names
+		
+		//File count matches with Number of files in file name list
 		
 		return bean;
 	}
 	
 	private void printCaseList() {
 		for(NotificationBean b: caseList) {
-			System.out.println("CASENUMBER:" + b.getCaseNumber());
-			System.out.println("CASETYPE:" + b.getCaseType());
-			System.out.println("COUNT:" + b.getFileCount());
+			System.out.println("CaseNumber:" + b.getCaseNumber());
+			System.out.println("CaseType:" + b.getCaseType());
+			System.out.println("Count:" + b.getFileCount());
 			for(String file: b.getFiles()) {
-				System.out.println("FILENAME:" + file);
+				System.out.println("FileName:" + file);
 			}
 		}
 	}
 	
+	private ArrayList<String> getFileList(Node fileList) throws Exception {
+		ArrayList<String> files = new ArrayList<String>();
+		NodeList nodes = fileList.getChildNodes();
+		
+	    for(int i=0; i < nodes.getLength(); ++i) {
+	    	Node n = nodes.item(i);
+	    	System.out.println(n.getNodeName() + n.getNodeValue());
+	    } 
+		return files;		
+	}
 	
 	public String getFileName() {
 		return fileName;
