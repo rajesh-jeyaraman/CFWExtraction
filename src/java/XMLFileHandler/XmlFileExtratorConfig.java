@@ -64,7 +64,7 @@ public class XmlFileExtratorConfig {
 			
 			if(processTriggerFileName == null) {
 				processTriggerFileName = "Notification.xml";
-			}
+			}			
 			
 			createOutDir(outputFolderPath);
 			createDirIfNotExists(sipOutputFolderPath);
@@ -228,11 +228,11 @@ public class XmlFileExtratorConfig {
 	}
 	public boolean isDataFile(String fileName,String caseNumber) {
 		boolean status = false;
-		
+
 		if(datafileNameIndicator == null) {
 			status = true; // Since no identifier is configured, consider all the files are potential data file for extraction. 
 		}
-		if(fileName.contains(caseNumber+datafileNameIndicator)) {  //TODO: Support for multiple indicator type. For now only one string is configured. _case.xml
+		if(fileName.contains(caseNumber) && fileName.contains(datafileNameIndicator)) {  //TODO: Support for multiple indicator type. For now only one string is configured. _case.xml
 			status = true;
 		}
 		

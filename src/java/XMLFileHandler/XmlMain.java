@@ -214,6 +214,8 @@ public class XmlMain {
 			boolean tagFound = false;
 			for(NameValuePair data: dataList) {
 				String dataPath = removeAttr(data.getName());
+				System.out.println(dataPath);
+				System.out.println(data.getValue());
 				if(str.equals(dataPath)) {
 					if(data.getValue().trim() != "") {
 						tagFound = true;
@@ -255,8 +257,8 @@ public class XmlMain {
 			}
 			
 		}							
-		
-		return getOrderedList(unorderXpathList, configXpathList);
+		return unorderXpathList;
+		//return getOrderedList(unorderXpathList, configXpathList);
 	}
 	
 	
@@ -285,60 +287,26 @@ public class XmlMain {
 			totalArchiveCount = 0;
 			totalCaseCount = 0;
 			
-		
 			//for(String file: files) {
 			for(NotificationBean caseDtls: cases.getCaseList()) {
 				
-				ArrayList<NameValuePair> fileXpathList =null;
+				ArrayList<NameValuePair> fileXpathList =new ArrayList<NameValuePair>();
+				ArrayList<NameValuePair> dataXpathList =new ArrayList<NameValuePair>();
 				boolean dataFileFound = false;
+				String caseNumber = caseDtls.getCaseNumber();
 				for(String file: caseDtls.getFiles()) {
 					files.add(config.getDataFolderPath()+file);
 					++totalFileCount;
-					String caseNumber = null;
 				
 					try {
 						if(config.isDataFile(file,caseDtls.getCaseNumber())== true) {
 							dataFileFound = true;
 							++batch;
-							fileXpathList = new ArrayList<NameValuePair>();
-							//caseNumber = getCaseNumberFromFileName(file);
-							caseNumber = caseDtls.getCaseNumber();
-							//relatedFiles = getRelatedFilesForCaseNumber(caseNumber,files);
 							relatedFiles = caseDtls.getFiles();
-							fileXpathList = parseAndExtractData(config.getDataFolderPath()+file);  // Based on configuration file, data is extracted.	
-		
-							NameValuePair mandatoryErr = CheckMandatoryTags(fileXpathList);
-							if( mandatoryErr != null) {
-								System.out.println("Error in parsing xml file : " + file);
-								File fn = new File(config.getDataFolderPath() + file);
-								NameValuePair error = new NameValuePair(fn.getName(), "Error in parsing xml file : " + mandatoryErr.getValue() );
-								//Move the file and related file to error directory
-								//copyFilesToOutDir(relatedFiles);
-								addFailureInArchiveResponse(batch, finaleResponse, caseNumber, relatedFiles, caseDtls.getCaseType(), error, "400");
-								continue;
+							ArrayList<NameValuePair>tempXpathList = parseAndExtractData(config.getDataFolderPath()+file);  // Based on configuration file, data is extracted.
+							for(NameValuePair p: tempXpathList) {
+								dataXpathList.add(p);
 							}
-							boolean stat = true;
-							for(String f: relatedFiles) {
-								try {
-									copyFileToOutDir(f, caseNumber);
-								}
-								catch(FileNotFoundException e) {
-									System.out.println("Error in parsing xml file :" + f);
-									File fn = new File(config.getDataFolderPath() + f);
-									NameValuePair error = new NameValuePair(fn.getName(), fn.getName() +" File Not found in given location." );
-									//Move the file and related file to error directory
-									//copyFilesToOutDir(relatedFiles);
-									addFailureInArchiveResponse(batch, finaleResponse, caseNumber, relatedFiles, caseDtls.getCaseType(), error, "404");
-									stat = false;
-								}
-							}
-							if(stat == true) {
-								addSuccessInArchiveResponse(batch, finaleResponse, caseNumber, relatedFiles, caseDtls.getCaseType());
-							}				
-							else {
-								continue;
-							}
-							
 						}
 						else {
 							System.out.println(file + "Skipping as it is not data file.");
@@ -352,7 +320,7 @@ public class XmlMain {
 						//Move the file and related file to error directory
 						//copyFilesToOutDir(relatedFiles);
 						addFailureInArchiveResponse(batch, finaleResponse, caseNumber, relatedFiles, caseDtls.getCaseType(), error, "404");
-						continue;
+						break;
 					}
 					catch(Exception e) {
 						System.out.println("Error in parsing xml file :" + file);
@@ -362,21 +330,53 @@ public class XmlMain {
 						//Move the file and related file to error directory
 						//copyFilesToOutDir(relatedFiles);
 						addFailureInArchiveResponse(batch, finaleResponse, caseNumber, relatedFiles, caseDtls.getCaseType(), error, "400");
-						continue;
+						break;
 					}
-					addAttachmentTag(fileXpathList, relatedFiles);
-					addToFinalXpathList(batch,fileXpathList, finalXpathList);
-					createOutXmlFile(batch,fileXpathList, caseNumber);
-					caseNumbers.add(caseNumber);
 				 }
 				if(dataFileFound == false) {
 					++batch;
-					String caseNumber = caseDtls.getCaseNumber();
+					//String caseNumber = caseDtls.getCaseNumber();
 					relatedFiles = caseDtls.getFiles();
 					NameValuePair error = new NameValuePair(caseNumber + "_case.xml", "Case file is missing in notification file list" );
 					addFailureInArchiveResponse(batch, finaleResponse, caseNumber, relatedFiles, caseDtls.getCaseType(), error, "404");
+					break;
 				}
-				
+				else {
+					fileXpathList = getOrderedList(dataXpathList, configXpathList);
+					NameValuePair mandatoryErr = CheckMandatoryTags(fileXpathList);
+					if( mandatoryErr != null) {
+						System.out.println("Error in parsing xml file : " + caseNumber+ "_case.xml");
+						File fn = new File(config.getDataFolderPath() + caseNumber + "_case.xml");
+						NameValuePair error = new NameValuePair(fn.getName(), "Error in parsing xml file : " + mandatoryErr.getValue() );
+						//Move the file and related file to error directory
+						//copyFilesToOutDir(relatedFiles);
+						addFailureInArchiveResponse(batch, finaleResponse, caseNumber, relatedFiles, caseDtls.getCaseType(), error, "400");
+					}
+					else{
+						boolean stat = true;
+						for(String f: relatedFiles) {
+							try {
+								copyFileToOutDir(f, caseNumber);
+							}
+							catch(FileNotFoundException e) {
+								System.out.println("Error in parsing xml file :" + f);
+								File fn = new File(config.getDataFolderPath() + f);
+								NameValuePair error = new NameValuePair(fn.getName(), fn.getName() +" File Not found in given location." );
+								//Move the file and related file to error directory
+								//copyFilesToOutDir(relatedFiles);
+								addFailureInArchiveResponse(batch, finaleResponse, caseNumber, relatedFiles, caseDtls.getCaseType(), error, "404");
+								stat = false;
+							}
+						}
+						if(stat == true) {
+							addSuccessInArchiveResponse(batch, finaleResponse, caseNumber, relatedFiles, caseDtls.getCaseType());
+							addAttachmentTag(fileXpathList, relatedFiles);
+							addToFinalXpathList(batch,fileXpathList, finalXpathList);
+							createOutXmlFile(batch,fileXpathList, caseNumber);
+							caseNumbers.add(caseNumber);
+						}		
+					}
+				}
 			}
 			//createOutXmlFile(finalXpathList);
 			createSip();
@@ -404,7 +404,7 @@ public class XmlMain {
 			
 			if(!od.exists()) {
 				if(od.mkdir()) {
-					System.out.println(outDir + "Successfully created");
+					System.out.println(outDir + "Successfully Processed");
 				}
 			}
 			outDir = outDir + File.separator;
