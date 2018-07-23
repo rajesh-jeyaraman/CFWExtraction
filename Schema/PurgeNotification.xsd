@@ -1,0 +1,20 @@
+<xs:schema attributeFormDefault="qualified" elementFormDefault="qualified" targetNamespace="urn:x-otx:eas:schema:archive:1.0" xmlns:ns="urn:x-otx:eas:schema:archive:1.0" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="PurgeNotify" type="urn:PurgeNotifyType" xmlns:urn="urn:x-otx:eas:schema:archive:1.0"/>
+  <xs:complexType name="CaseType">
+    <xs:sequence>
+      <xs:element type="xs:string" name="CaseNumber"/>
+      <xs:element type="xs:string" name="CaseType" minOccurs="0" />
+      <xs:element type="xs:string" name="Status"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="CaseListType">
+    <xs:sequence>
+      <xs:element type="ns:CaseType" name="Case" maxOccurs="unbounded" minOccurs="0" xmlns:urn="urn:x-otx:eas:schema:archive:1.0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="PurgeNotifyType">
+    <xs:sequence>
+      <xs:element type="ns:CaseListType" name="CaseList" xmlns:urn="urn:x-otx:eas:schema:archive:1.0"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>

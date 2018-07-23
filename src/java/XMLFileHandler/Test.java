@@ -194,7 +194,8 @@ public static void SAXmain(String[] args) throws Exception {
 		
 		System.out.println("I am in main");
 		//testJsonParserCode();  
-		testDate(args);
+		//testDate(args);
+		testReplaceRoot();
 		
 	}
 	public static void testJsonParserCode() throws Exception{
@@ -211,6 +212,19 @@ public static void SAXmain(String[] args) throws Exception {
 		//Create an xml document with collated xpath list
 		String xmlOutput = XPathUtils.createXML(topath, "temp.xml");
 		System.out.println(xmlOutput);
+	}
+	
+	public static void testReplaceRoot() {
+		String str="/test[1]/Customers[1]/rowdata[1]/CustomerName[1]";
+
+		String[] strs = str.split("/");
+		String res = "/"+ "pagedata";
+		
+		for(int i=2; i<strs.length;++i) {
+			res = res + "/" + strs[i];			
+		}
+		System.out.println("Source String: " + str);
+		System.out.println("Modified String: " + res);
 	}
 	
 

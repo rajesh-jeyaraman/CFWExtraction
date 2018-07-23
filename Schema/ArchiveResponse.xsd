@@ -1,0 +1,43 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="urn:x-otx:eas:schema:archive:1.0" xmlns:ns="urn:x-otx:eas:schema:archive:1.0" elementFormDefault="qualified"  attributeFormDefault="qualified" >
+  <xs:element name="ArchiveResponse" type="ns:ArchiveResponseType"/>
+  <xs:complexType name="FileListType">
+    <xs:sequence>
+      <xs:element type="xs:string" name="FileName" maxOccurs="unbounded" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ErrorType">
+    <xs:sequence>
+      <xs:element type="xs:string" name="FileName"/>
+      <xs:element type="xs:string" name="Code"/>
+      <xs:element type="xs:string" name="Desc"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ErrorListType">
+    <xs:sequence>
+      <xs:element type="ns:ErrorType" name="Error"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="CaseType">
+    <xs:sequence>
+      <xs:element type="xs:string" name="CaseNumber"/>
+      <xs:element type="xs:string" name="CaseType" />
+      <xs:element type="xs:int" name="Count"/>
+      <xs:element type="ns:FileListType" name="FileList"/>
+      <xs:element type="xs:string" name="Status"/>
+      <xs:element type="ns:ErrorListType" name="ErrorList" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="CaseListType">
+    <xs:sequence>
+      <xs:element type="ns:CaseType" name="Case" maxOccurs="unbounded" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ArchiveResponseType">
+    <xs:sequence>
+      <xs:element type="ns:CaseListType" name="CaseList"/>
+      <xs:element type="xs:long" name="TotalFileCount"/>
+      <xs:element type="xs:long" name="SuccessFileCount"/>
+      <xs:element type="xs:long" name="TotalCaseCount"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>

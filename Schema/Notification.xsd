@@ -1,0 +1,28 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="urn:x-otx:eas:schema:archive:1.0" xmlns:ns="urn:x-otx:eas:schema:archive:1.0" elementFormDefault="qualified"
+  attributeFormDefault="qualified" >
+
+  <xs:element name="ArchiveNotify" type="urn:ArchiveNotifyType" xmlns:urn="urn:x-otx:eas:schema:archive:1.0"/>
+  <xs:complexType name="FileListType">
+    <xs:sequence>
+      <xs:element type="xs:string" name="FileName" maxOccurs="unbounded" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="CaseType">
+    <xs:sequence>
+      <xs:element type="xs:string" name="CaseNumber"/>
+      <xs:element type="xs:string" name="CaseType"/>
+      <xs:element type="xs:byte" name="Count"/>
+      <xs:element type="ns:FileListType" name="FileList" xmlns:urn="urn:x-otx:eas:schema:archive:1.0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="CaseListType">
+    <xs:sequence>
+      <xs:element type="ns:CaseType" name="Case" maxOccurs="unbounded" minOccurs="0" xmlns:urn="urn:x-otx:eas:schema:archive:1.0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ArchiveNotifyType">
+    <xs:sequence>
+      <xs:element type="ns:CaseListType" name="CaseList" xmlns:urn="urn:x-otx:eas:schema:archive:1.0"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>

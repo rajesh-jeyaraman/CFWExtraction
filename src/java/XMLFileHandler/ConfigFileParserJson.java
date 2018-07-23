@@ -69,7 +69,7 @@ public class ConfigFileParserJson {
 	}
 	public NameValuePair getProperties(JSONObject e) throws Exception {
 		NameValuePair n = new NameValuePair(e.getString("frompath"), "");
-
+		
 		n.setTopath(e.getString("topath"));
 		n.setDatatype(e.getString("datatype"));
 		n.setFieldName(e.getString("name"));

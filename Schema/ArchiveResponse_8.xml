@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<ArchiveResponse  xmlns="urn:x-otx:eas:schema:archive:1.0">
+  <CaseList>
+    <Case>
+      <CaseNumber>CFW-DE-20131211-186</CaseNumber>
+      <CaseType></CaseType>
+      <Count>1</Count>
+      <FileList>
+        <FileName>CCFW-DE-20131211-186_case.xml</FileName>
+      </FileList>
+      <Status>FAIL</Status>
+      <ErrorList>
+        <Error>
+          <FileName>CCFW-DE-20131211-186_case.xml</FileName>
+          <Code>404</Code>
+          <Desc>CCFW-DE-20131211-186_case.xml File Not found in given location.</Desc>
+        </Error>
+      </ErrorList>
+    </Case>
+    <Case>
+      <CaseNumber>CFW-DE-20131212-33</CaseNumber>
+      <CaseType></CaseType>
+      <Count>2</Count>
+      <FileList>
+        <FileName>CFW-DE-20131212-33.xml</FileName>
+        <FileName>CFW-DE-20131212-33_account.xml</FileName>
+      </FileList>
+      <Status>FAIL</Status>
+      <ErrorList>
+        <Error>
+          <FileName>CFW-DE-20131212-33_case.xml</FileName>
+          <Code>404</Code>
+          <Desc>Case file is missing in notification file list</Desc>
+        </Error>
+      </ErrorList>
+    </Case>
+    <Case>
+      <CaseNumber>CFW-DE-20140323-5</CaseNumber>
+      <CaseType></CaseType>
+      <Count>3</Count>
+      <FileList>
+        <FileName>CFW-DE-20140323-5_case.xml</FileName>
+        <FileName>CFW-DE-20140323-5-1_account.xml</FileName>
+        <FileName>CFW-DE-20140323-5-2_account.xml</FileName>
+      </FileList>
+      <Status>FAIL</Status>
+      <ErrorList>
+        <Error>
+          <FileName>CFW-DE-20140323-5-2_account.xml</FileName>
+          <Code>404</Code>
+          <Desc>CFW-DE-20140323-5-2_account.xml File Not found in given location.</Desc>
+        </Error>
+      </ErrorList>
+    </Case>
+    <Case>
+      <CaseNumber>CFW-DE-20140317-55</CaseNumber>
+      <CaseType></CaseType>
+      <Count>1</Count>
+      <FileList>
+        <FileName>CFW-DE-20140317-55_case.xml</FileName>
+      </FileList>
+      <Status>SUCCESS</Status>
+    </Case>
+    <Case>
+      <CaseNumber>CFW-DE-20161115-3</CaseNumber>
+      <CaseType></CaseType>
+      <Count>1</Count>
+      <FileList>
+        <FileName>CFW-DE-20161115-3_case.xml</FileName>
+      </FileList>
+      <Status>FAIL</Status>
+      <ErrorList>
+        <Error>
+          <FileName>CFW-DE-20161115-3_case.xml</FileName>
+          <Code>400</Code>
+          <Desc>Error in parsing Xml:The reference to entity "false" must end with the ';' delimiter.</Desc>
+        </Error>
+      </ErrorList>
+    </Case>
+    <Case>
+      <CaseNumber>CFW-DE-20131211-198</CaseNumber>
+      <CaseType></CaseType>
+      <Count>1</Count>
+      <FileList>
+        <FileName>CCFW-DE-20131211-186_case.xml</FileName>
+      </FileList>
+      <Status>FAIL</Status>
+      <ErrorList>
+        <Error>
+          <FileName>CCFW-DE-20131211-186_case.xml</FileName>
+          <Code>404</Code>
+          <Desc>CCFW-DE-20131211-186_case.xml File Not found in given location.</Desc>
+        </Error>
+      </ErrorList>
+    </Case>
+  </CaseList>
+  <TotalFileCount>9</TotalFileCount>
+  <SuccessFileCount>1</SuccessFileCount>
+  <TotalCaseCount>6</TotalCaseCount>
+</ArchiveResponse>
+

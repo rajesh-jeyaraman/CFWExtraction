@@ -33,8 +33,10 @@ import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
 
 import com.p3.archon.xmlsipautomater.PackageMain;
+import com.p3.archon.AuditReport.ReportMain;
 import com.p3.archon.jsonparser.JsonProcessor;
 import com.p3.archon.xmlsipautomater.PackageMain;
+import com.p3.archon.AuditReport.bean.ArchiveResponseBean;
 
 public class XmlMain {
 
@@ -49,9 +51,11 @@ public class XmlMain {
     private Document doc = null;
     private XPathFactory xpathfactory = null;
     private XPath xpath = null;
-    int totalFileCount = 0;
-    int totalArchiveCount = 0;
-    int totalCaseCount = 0;
+    private int totalFileCount = 0;
+    private int totalArchiveCount = 0;
+    private int totalCaseCount = 0;
+    private String jobId = "";
+    
 	
 	public boolean setConfigFileName(String configFileName) {
 		if(configFileName != null) {
@@ -68,6 +72,21 @@ public class XmlMain {
 	public void setConfig(XmlFileExtratorConfig config) {
 		this.config = config;
 	}
+	
+
+	public String getJobId() {
+		return jobId;
+	}
+
+	public boolean setJobId(String jobId) {
+		if(jobId != null) {
+			this.jobId = jobId;
+			System.out.println(jobId);
+			return true;
+		}
+		System.out.println("XML File Extractor JobId is null.");
+		return false;
+	}
 
 	public static void main(String[] args) {
 		try {
@@ -79,6 +98,11 @@ public class XmlMain {
 				return;
 			}
 			
+			if(process.setJobId(args[1]) == false) {
+				System.out.println("Job Id is missing");
+				return;
+			}
+			
 			//Read the configuration setting for this process
 			process.setConfig(new XmlFileExtratorConfig(args[0]));
 			if(process.getConfig().parseFile() == false)return;
@@ -86,13 +110,17 @@ public class XmlMain {
 			//Create a xml file to perform xpath search during data extraction.
 			String xml = process.getJsonConfigAsXml(); //getParserConfigAsXml();
 			process.initDom(xml);
-			
+			//Looks like enough to look for only one directory
+			process.start();
+		/*	
 			ArrayList<String> dirList = process.getConfig().getDataDirectoryList();
 			dirList.add(process.getConfig().getDataFolderPath());		// Data can be either in main data folder or first level sub-folders. 
 			for(String dir: dirList) {
 				process.getConfig().setDataFolderPath(dir);
 				process.start();
 			}
+			*/
+			
 		}
 		catch(Exception e)
 		{
@@ -231,7 +259,7 @@ public class XmlMain {
 		
 		return error;
 	}
-		
+/*		
 	public ArrayList<NameValuePair> parseAndExtractData(String xmlFileName) throws Exception {
 		
 		ArrayList<NameValuePair> dataXpaths = getXpathListFromXml(xmlFileName);		
@@ -260,8 +288,74 @@ public class XmlMain {
 		return unorderXpathList;
 		//return getOrderedList(unorderXpathList, configXpathList);
 	}
+	*/
+	// For now keep it very simple. Assumption user maintain the tag hierarchy same as source. Exception is root tag in destination alone can be different. 
+	public String getNewToXpath(String fromPath, String toPath, String root) {   
+		
+		String[] strs = fromPath.split("/");
+		String res = "/"+ root;
+		
+		for(int i=2; i<strs.length;++i) {
+			res = res + "/" + strs[i];			
+		}
+		
+		if(toPath.equals(removeAttr(res))!= true) {
+			res = toPath;
+		}
+		return res;
+	}
 	
-	
+	public String getRoot(String xpath) {
+		String[] configPathList = xpath.split("/");
+		return  configPathList[1];  // index 0 will be null value
+	}
+
+	public ArrayList<NameValuePair> parseAndExtractData(String xmlFileName) throws Exception{
+		ArrayList<NameValuePair> dataXpaths = getXpathListFromXml(xmlFileName);
+		ArrayList<NameValuePair> unorderXpathList = new ArrayList<NameValuePair>();
+		ConfigFileParserJson xpath = new ConfigFileParserJson("FinalResult.json");
+		ArrayList<NameValuePair> xpathList = xpath.getXpathList();
+		mandatoryXpathList = xpath.getMandatoryXPaths();
+		String root = null;
+		root = getRoot(xpathList.get(0).getTopath());
+		
+		for(NameValuePair data: dataXpaths) {
+			NameValuePair toPath = getMatchingXpath(data, xpathList);
+			
+			if(toPath != null) {	
+				System.out.println("From Path: " + data.getFrompath() );
+				System.out.println("To Path: " + toPath.getTopath());
+				
+				String destPath = getNewToXpath(data.getName(), toPath.getTopath(), root);
+				data.setName(destPath);
+				
+				String str = xpath.getDataType(data);
+				if(str.equalsIgnoreCase(DATATYPE.DATETIME) == true) {
+					//System.out.println("---" + data.getName() + ":" + data.getValue());
+					String val = iaDateTimeFormat(data.getValue());
+					data.setValue(val);
+				}
+				else if(str.equalsIgnoreCase(DATATYPE.DATE)==true) {
+					String val = iaDateFormat(data.getValue());
+					data.setValue(val);
+				}
+				unorderXpathList.add(data);
+			}
+		}
+		
+		return unorderXpathList; //TODO ; Replace with topath list.
+	}
+	public NameValuePair getMatchingXpath(NameValuePair data, ArrayList<NameValuePair> xpathList){
+		NameValuePair match = null;
+		for(NameValuePair p: xpathList) {
+			String dataXpath = removeAttr(data.getName());
+			String configXpath = removeAttr(p.getName());
+			if(dataXpath.equals(configXpath)==true) {
+				match = p;
+			}
+		}
+		return match;
+	}
 
 	public void start()throws Exception {
 		try {
@@ -434,8 +528,13 @@ public class XmlMain {
 				}
 			}
 		}
+		String responseFileAbsPath = config.getResponseFolderPath() + "ArchiveResponse_"+files.length +".xml";
+		XPathUtils.createXML(response,responseFileAbsPath);
 		
-		XPathUtils.createXML(response,config.getResponseFolderPath() + "ArchiveResponse_"+files.length +".xml");
+		//Create PDF report for Audit purpose
+		ReportMain.reportMain(responseFileAbsPath, jobId, config.getSipOutputFolderPath());
+		
+		
 	}
 		
 	private void renameProcessTriggerFile() {
