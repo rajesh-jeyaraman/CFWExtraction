@@ -370,7 +370,7 @@ public class XmlMain {
 			
 	        ArrayList<NameValuePair> finalXpathList = new ArrayList<NameValuePair>();
 			ArrayList<String> files = config.getDataFileList();
-			ArrayList<String> relatedFiles = null;
+	       	ArrayList<String> relatedFiles = null;
 			ArrayList<String> caseNumbers = new ArrayList<String>();
 			
 			NotificationParser cases = new NotificationParser(config.getDataFolderPath() + config.getProcessTriggerFileName());
@@ -445,6 +445,7 @@ public class XmlMain {
 						//Move the file and related file to error directory
 						//copyFilesToOutDir(relatedFiles);
 						addFailureInArchiveResponse(batch, finaleResponse, caseNumber, relatedFiles, caseDtls.getCaseType(), error, "400");
+						continue;
 					}
 					else{
 						boolean stat = true;
@@ -474,9 +475,9 @@ public class XmlMain {
 			}
 			//createOutXmlFile(finalXpathList);
 			createSip();
-			renameProcessTriggerFile();
 			addTotalFileCount(finaleResponse);
 			createResponseFile(finaleResponse);
+			renameProcessTriggerFile();
 						
 			//Delete output folder
 			for(String d: caseNumbers) {
@@ -534,7 +535,8 @@ public class XmlMain {
 		//Create PDF report for Audit purpose
 		ReportMain.reportMain(responseFileAbsPath, jobId, config.getSipOutputFolderPath());
 		
-		
+		//Copy notifiction file for audit purpose
+		copyNotifyFileToSipFolder();
 	}
 		
 	private void renameProcessTriggerFile() {
@@ -751,6 +753,17 @@ public class XmlMain {
 	             IOUtils.closeQuietly(is);
 	             IOUtils.closeQuietly(os);
 	         }
+	}
+	
+	private void copyNotifyFileToSipFolder() {
+		try {
+		
+		File notifyFile = new File(config.getDataFolderPath() + config.getProcessTriggerFileName()); // By this time notification file name would have got renamed.
+		copyFileUsingStream(notifyFile, config.getSipOutputFolderPath());
+		}
+		catch(Exception e) {
+			System.out.println(e.getMessage());
+		}
 	}
 	
 	private void copyFileToOutDir(String file, String caseNumber) throws Exception {

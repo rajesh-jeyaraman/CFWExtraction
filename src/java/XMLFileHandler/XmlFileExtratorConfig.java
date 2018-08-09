@@ -232,7 +232,7 @@ public class XmlFileExtratorConfig {
 		if(datafileNameIndicator == null) {
 			status = true; // Since no identifier is configured, consider all the files are potential data file for extraction. 
 		}
-		if(fileName.contains(caseNumber) && fileName.contains(datafileNameIndicator)) {  //TODO: Support for multiple indicator type. For now only one string is configured. _case.xml
+		if(fileName.startsWith(caseNumber) && fileName.contains(datafileNameIndicator)) {  //TODO: Support for multiple indicator type. For now only one string is configured. _case.xml
 			status = true;
 		}
 		

@@ -13,7 +13,6 @@ import com.itextpdf.text.Image;
 import com.itextpdf.text.pdf.PdfContentByte;
 import com.itextpdf.text.pdf.PdfReader;
 import com.itextpdf.text.pdf.PdfStamper;
-
 import com.p3.archon.AuditReport.bean.ArchiveResponseBean;
 import com.p3.archon.AuditReport.bean.CaseBean;
 
@@ -52,6 +51,7 @@ public class Common {
 		sb.append("<b><font style=\"size:14px\">Case Summary</font></b><br></br><br></br>");
 		sb.append("<table class=\"table table-bordered table-striped\"><thead><tr>");
 		
+		sb.append("<td colspan=\"1\" align=\"center\"><b>S.No.</b></td>");
 		sb.append("<td colspan=\"1\" align=\"center\"><b>Case Number</b></td>");
 		sb.append("<td colspan=\"1\" align=\"center\"><b>Case Type</b></td>");
 		sb.append("<td colspan=\"1\" align=\"center\"><b>File List</b></td>");
@@ -59,21 +59,23 @@ public class Common {
 		sb.append("<td colspan=\"1\" align=\"center\"><b>Remarks</b></td>");
 		sb.append("</tr></thead><tbody>");
 
+		int serialNumber = 1;
 		for (CaseBean row : arb.getCaseList()) {
 			for (String file :row.getFileList()) {
 				sb.append("<tr>");
+				sb.append("<td colspan=\"1\" align=\"center\">").append(serialNumber++).append("</td>");
 				sb.append("<td colspan=\"1\" align=\"left\">").append(row.getCaseNumber()).append("</td>");
 				sb.append("<td colspan=\"1\" align=\"left\">").append(row.getCaseType()).append("</td>");
 				sb.append("<td colspan=\"1\" align=\"left\">").append(file).append("</td>");
 				sb.append("<td colspan=\"1\" align=\"center\">").append(row.getStatus()).append("</td>");
 				
 				if (row.getErrorList() == null) {
-					sb.append("<td colspan=\"1\" align=\"center\">").append("-").append("</td>");
+					sb.append("<td colspan=\"1\" align=\"left\">").append("-").append("</td>");
 				} else {
 					if (row.getErrorFileMap().containsKey(row.getCaseNumber()+"/"+file)) {
 						sb.append("<td colspan=\"1\" align=\"left\">").append(row.getErrorFileMap().get(row.getCaseNumber()+"/"+file)).append("</td>");
 					} else {
-						sb.append("<td colspan=\"1\" align=\"center\">").append("-").append("</td>");
+						sb.append("<td colspan=\"1\" align=\"left\">").append("-").append("</td>");
 					}
 				}	
 				sb.append("</tr>");
@@ -82,6 +84,7 @@ public class Common {
 				for (String key : row.getErrorFileMap().keySet()) {
 					if (!row.getFileList().contains(key.split("/")[1])) {
 						sb.append("<tr>");
+						sb.append("<td colspan=\"1\" align=\"center\">").append(serialNumber++).append("</td>");
 						sb.append("<td colspan=\"1\" align=\"left\">").append(row.getCaseNumber()).append("</td>");
 						sb.append("<td colspan=\"1\" align=\"left\">").append(row.getCaseType()).append("</td>");
 						sb.append("<td colspan=\"1\" align=\"left\">").append(key.split("/")[1]).append("</td>");
@@ -137,19 +140,11 @@ public class Common {
 
 			PdfReader pdfReader = new PdfReader(tempfile);
 			PdfStamper pdfStamper = new PdfStamper(pdfReader, new FileOutputStream(new File(finalfile)));
-			//PdfContentByte content = pdfStamper.getUnderContent(pdfReader.getNumberOfPages());
-			try {
-				Image image = Image.getInstance("archon.png");
-				image.scaleToFit(300f, 300f);
-				image.setAbsolutePosition(950f, 20f);
-				for (int i = 1; i <= pdfReader.getNumberOfPages(); i++) {
-					PdfContentByte content = pdfStamper.getUnderContent(i);
-					content.addImage(image);
-				}
-			}
-			catch(Exception e) {
-				System.out.println(e.getMessage());
-			}
+			PdfContentByte content = pdfStamper.getUnderContent(pdfReader.getNumberOfPages());
+			Image image = Image.getInstance("archon.png");
+			image.scaleToFit(300f, 300f);
+			image.setAbsolutePosition(950f, 20f);
+			content.addImage(image);
 			pdfStamper.close();
 			pdfReader.close();
 
