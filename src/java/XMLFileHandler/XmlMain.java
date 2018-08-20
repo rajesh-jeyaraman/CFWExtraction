@@ -90,37 +90,42 @@ public class XmlMain {
 
 	public static void main(String[] args) {
 		try {
-			
 			XmlMain process = new XmlMain();
 			// Initial Validation
-			if(process.setConfigFileName(args[0]) == false) {
-				System.out.println("XMLFileExtractorConfig.json file is missing");
-				return;
+			if(args.length == 2){
+				if(process.setConfigFileName(args[0]) == false) {
+					System.out.println("XMLFileExtractorConfig.json file is missing");
+					return;
+				}
+
+				if(process.setJobId(args[1]) == false) {
+					System.out.println("Job Id is missing");
+					return;
+				}
+				//Read the configuration setting for this process
+				process.setConfig(new XmlFileExtratorConfig(args[0]));
+				if(process.getConfig().parseFile() == false){
+					return;
+				}
+				
+				//Create a xml file to perform xpath search during data extraction.
+				String xml = process.getJsonConfigAsXml(); //getParserConfigAsXml();
+				process.initDom(xml);
+				//Looks like enough to look for only one directory
+				process.start();
 			}
-			
-			if(process.setJobId(args[1]) == false) {
-				System.out.println("Job Id is missing");
-				return;
+			else{
+				System.out.println("XMLFileExtractorConfig.json file or JobID is missing");
 			}
-			
-			//Read the configuration setting for this process
-			process.setConfig(new XmlFileExtratorConfig(args[0]));
-			if(process.getConfig().parseFile() == false)return;
-			
-			//Create a xml file to perform xpath search during data extraction.
-			String xml = process.getJsonConfigAsXml(); //getParserConfigAsXml();
-			process.initDom(xml);
-			//Looks like enough to look for only one directory
-			process.start();
-		/*	
+
+			/*	
 			ArrayList<String> dirList = process.getConfig().getDataDirectoryList();
 			dirList.add(process.getConfig().getDataFolderPath());		// Data can be either in main data folder or first level sub-folders. 
 			for(String dir: dirList) {
 				process.getConfig().setDataFolderPath(dir);
 				process.start();
 			}
-			*/
-			
+			 */
 		}
 		catch(Exception e)
 		{
