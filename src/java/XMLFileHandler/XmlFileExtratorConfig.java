@@ -8,8 +8,11 @@ import org.apache.wink.json4j.JSONArray;
 import org.apache.wink.json4j.JSONObject;
 
 public class XmlFileExtratorConfig {
-
+	
+	private String jobId = "";
 	private String fileName = null;
+	private XmlFileExtratorConfig config = null;
+	private String configFileName = null;
 	JSONArray entityList = null; 
 	String configFolderPath = null;
 	String dataFolderPath = null;
@@ -28,6 +31,37 @@ public class XmlFileExtratorConfig {
 	XmlFileExtratorConfig(String fileName){
 		this.fileName = fileName;
 		
+	}
+	
+	public boolean setConfigFileName(String configFileName) {
+		System.out.println(configFileName);
+		if(configFileName != null) {
+			this.configFileName = configFileName;
+			return true;
+		}
+		return false;
+	}
+
+	public XmlFileExtratorConfig getConfig() {
+		return config;
+	}
+
+	public void setConfig(XmlFileExtratorConfig config) {
+		this.config = config;
+	}
+
+
+	public String getJobId() {
+		return jobId;
+	}
+
+	public boolean setJobId(String jobId) {
+		if(jobId != null) {
+			this.jobId = jobId;
+			return true;
+		}
+		System.out.println("XML File Extractor JobId is null.");
+		return false;
 	}
 	
 	public boolean parseFile() throws Exception {
